@@ -6,6 +6,7 @@ import NewsCard from './NewsCard';
 import SearchBar from './SearchBar';
 import CategoryFilter from './CategoryFilter';
 import NewsDetail from './NewsDetail';
+import StatusHeader from './StatusHeader';
 
 export default function NewsList() {
     const [news, setNews] = useState<NewsItem[]>([]);
@@ -95,6 +96,7 @@ export default function NewsList() {
 
     return (
         <div className="flex flex-col">
+            <StatusHeader updateCount={filteredNews.length} />
             <SearchBar value={searchQuery} onChange={setSearchQuery} />
             <CategoryFilter
                 activeCategory={activeCategory}
@@ -109,7 +111,7 @@ export default function NewsList() {
                                 <NewsCard
                                     key={`${item.id}-${idx}`}
                                     item={item}
-                                    onSelect={(item) => {
+                                    onSelect={(item: NewsItem) => {
                                         setSelectedItem(item);
                                         window.scrollTo(0, 0);
                                     }}

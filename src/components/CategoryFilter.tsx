@@ -1,6 +1,6 @@
 'use client';
 
-const CATEGORIES = ['All', 'Politics', 'Business', 'Sports', 'Entertainment', 'Lifestyle'];
+const CATEGORIES = ['All', 'Politics', 'Business', 'Education', 'Health', 'Sports', 'Entertainment'];
 
 type CategoryFilterProps = {
     activeCategory: string;

@@ -25,12 +25,16 @@ const FEEDS = [
     { name: 'The Standard', category: 'Business', url: 'https://www.standardmedia.co.ke/rss/business.php' },
     { name: 'Capital Business', category: 'Business', url: 'https://www.capitalfm.co.ke/business/feed/' },
 
+    // Education
+    { name: 'The Standard', category: 'Education', url: 'https://www.standardmedia.co.ke/rss/education.php' },
+
+    // Health
+    { name: 'The Standard', category: 'Health', url: 'https://www.standardmedia.co.ke/rss/health.php' },
+
     // Sports
     { name: 'The Standard', category: 'Sports', url: 'https://www.standardmedia.co.ke/rss/sports.php' },
-    { name: 'Capital Sports', category: 'Sports', url: 'https://www.capitalfm.co.ke/sports/feed/' },
 
-    // Entertainment / Lifestyle
-    { name: 'The Standard', category: 'Entertainment', url: 'https://www.standardmedia.co.ke/rss/entertainment.php' },
+    // Entertainment & Lifestyle
     { name: 'Capital Lifestyle', category: 'Lifestyle', url: 'https://www.capitalfm.co.ke/lifestyle/feed/' },
 ];
 
