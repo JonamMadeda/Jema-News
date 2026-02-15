@@ -19,5 +19,10 @@
             "type": "image/png",
             "purpose": "maskable"
         }
+    ],
+    "lang": "en-US",
+    "categories": [
+        "news",
+        "education"
     ]
 }

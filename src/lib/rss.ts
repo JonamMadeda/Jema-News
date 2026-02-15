@@ -38,6 +38,14 @@ const FEEDS = [
     { name: 'Capital Lifestyle', category: 'Lifestyle', url: 'https://www.capitalfm.co.ke/lifestyle/feed/' },
 ];
 
+interface CustomItem extends Parser.Item {
+    mediaContent?: {
+        $?: {
+            url?: string;
+        };
+    };
+}
+
 export async function fetchNews(): Promise<NewsItem[]> {
     const allNews: NewsItem[] = [];
 
@@ -45,7 +53,8 @@ export async function fetchNews(): Promise<NewsItem[]> {
         try {
             const parsedFeed = await parser.parseURL(feed.url);
             const items = parsedFeed.items.map((item) => {
-                const imageUrl = item.enclosure?.url || (item as any).mediaContent?.$?.url;
+                const customItem = item as CustomItem;
+                const imageUrl = item.enclosure?.url || customItem.mediaContent?.$?.url;
                 const link = item.link || '#';
                 const id = Buffer.from(link).toString('base64').substring(0, 16);
 

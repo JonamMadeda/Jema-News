@@ -10,12 +10,12 @@ export default function SearchBar({ value, onChange }: SearchBarProps) {
         <div className="relative mb-8">
             <input
                 type="text"
-                placeholder="Search for headlines, events or topics..."
+                placeholder="Search headlines, events or topics..."
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
-                className="w-full bg-white border-b-2 border-gray-100 py-4 px-0 focus:outline-none focus:border-[#001f3f] text-lg md:text-xl font-medium transition-colors placeholder:text-gray-300"
+                className="w-full bg-white border-b-2 border-gray-100 py-4 pr-10 focus:outline-none focus:border-[#001f3f] text-base md:text-xl font-medium transition-colors placeholder:text-gray-300"
             />
-            <div className="absolute right-0 top-1/2 -translate-y-1/2">
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
                 <svg
                     className="w-5 h-5 text-gray-300"
                     fill="none"

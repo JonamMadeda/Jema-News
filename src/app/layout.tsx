@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/react";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,8 +26,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} antialiased selection:bg-blue-100`}>
+    <html lang="en-US">
+      <body className={`${inter.className} antialiased selection:bg-blue-100 notranslate`}>
         <meta name="application-name" content="Jema News" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -34,6 +35,8 @@ export default function RootLayout({
         <meta name="format-detection" content="telephone=no" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="theme-color" content="#001f3f" />
+        <meta httpEquiv="Content-Language" content="en" />
+        <meta name="google" content="notranslate" />
 
         <header className="border-b border-gray-100 sticky top-0 bg-white/90 backdrop-blur-sm z-50">
           <div className="container mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
@@ -62,6 +65,7 @@ export default function RootLayout({
             </p>
           </div>
         </footer>
+        <Analytics />
       </body>
     </html>
   );
