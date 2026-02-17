@@ -31,11 +31,6 @@ const FEEDS = [
     // Health
     { name: 'The Standard', category: 'Health', url: 'https://www.standardmedia.co.ke/rss/health.php' },
 
-    // Sports
-    { name: 'The Standard', category: 'Sports', url: 'https://www.standardmedia.co.ke/rss/sports.php' },
-
-    // Entertainment & Lifestyle
-    { name: 'Capital Lifestyle', category: 'Lifestyle', url: 'https://www.capitalfm.co.ke/lifestyle/feed/' },
 ];
 
 interface CustomItem extends Parser.Item {
