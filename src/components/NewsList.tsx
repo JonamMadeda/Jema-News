@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { NewsItem } from '@/lib/rss';
 import NewsCard from './NewsCard';
 import SearchBar from './SearchBar';
@@ -17,7 +17,7 @@ export default function NewsList() {
     const [activeCategory, setActiveCategory] = useState('All');
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedItem, setSelectedItem] = useState<NewsItem | null>(null);
-    const ITEMS_PER_PAGE = 7;
+    const ITEMS_PER_PAGE = 5;
 
     useEffect(() => {
         async function loadNews() {
@@ -35,6 +35,21 @@ export default function NewsList() {
         }
         loadNews();
     }, []);
+
+    // Handle browser back button for detail view
+    useEffect(() => {
+        const handlePopState = () => {
+            setSelectedItem(null);
+        };
+
+        if (selectedItem) {
+            window.addEventListener('popstate', handlePopState);
+        }
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, [selectedItem]);
 
     useEffect(() => {
         let result = [...news];
@@ -61,7 +76,7 @@ export default function NewsList() {
     const paginatedNews = filteredNews.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
     if (selectedItem) {
-        return <NewsDetail item={selectedItem} onBack={() => setSelectedItem(null)} />;
+        return <NewsDetail item={selectedItem} onBack={() => window.history.back()} />;
     }
 
     if (loading) {
@@ -112,6 +127,7 @@ export default function NewsList() {
                                     key={`${item.id}-${idx}`}
                                     item={item}
                                     onSelect={(item: NewsItem) => {
+                                        window.history.pushState({ detail: true }, '');
                                         setSelectedItem(item);
                                         window.scrollTo(0, 0);
                                     }}
