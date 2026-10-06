@@ -102,16 +102,6 @@ export default function NewsDetail({ item, onBack }: NewsDetailProps) {
             </div>
 
             <article className="max-w-2xl">
-                {item.imageUrl && (
-                    <img
-                        src={item.imageUrl}
-                        alt={item.title}
-                        loading="lazy"
-                        sizes="(max-width: 768px) 100vw, 672px"
-                        className="w-full aspect-[16/10] object-cover rounded-md bg-gray-100 mb-5"
-                    />
-                )}
-
                 <div className="flex items-center gap-1.5 flex-wrap text-[11px] font-semibold uppercase tracking-wide mb-3">
                     <span className="px-2.5 py-0.5 border border-gray-200 bg-white text-gray-600 rounded-md whitespace-nowrap">{item.category}</span>
                     <span className="text-gray-900 truncate">{item.source}</span>

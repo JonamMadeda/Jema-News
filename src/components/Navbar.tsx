@@ -5,14 +5,15 @@ import { Public_Sans } from 'next/font/google';
 
 const brand = Public_Sans({ subsets: ['latin'], weight: ['700', '800'] });
 
-type Tab = 'latest' | 'brief';
+type Tab = 'latest' | 'brief' | 'trending';
 
 export const TAB_EVENT = 'jema:tab';
 export const REFRESH_EVENT = 'jema:refresh';
 
 export function getInitialTab(): Tab {
     if (typeof window === 'undefined') return 'brief';
-    return new URLSearchParams(window.location.search).get('tab') === 'latest' ? 'latest' : 'brief';
+    const t = new URLSearchParams(window.location.search).get('tab');
+    return t === 'latest' || t === 'trending' ? t : 'brief';
 }
 
 export function setAppTab(tab: Tab) {

@@ -10,7 +10,13 @@ import DailyDigest from './DailyDigest';
 import LoadingMessage from './LoadingMessage';
 import { TAB_EVENT, REFRESH_EVENT, getInitialTab, setAppTab } from './Navbar';
 
-type Tab = 'latest' | 'brief';
+type Tab = 'latest' | 'brief' | 'trending';
+
+const TABS: { id: Tab; label: string }[] = [
+    { id: 'brief', label: 'Daily Brief' },
+    { id: 'latest', label: 'Latest News' },
+    { id: 'trending', label: 'Trending' },
+];
 
 function getPageNumbers(current: number, total: number): (number | '…')[] {
     if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
@@ -22,8 +28,9 @@ function getPageNumbers(current: number, total: number): (number | '…')[] {
 function readParams() {
     if (typeof window === 'undefined') return { tab: 'brief' as Tab, cat: 'All', q: '', page: 1, story: '' };
     const s = new URLSearchParams(window.location.search);
+    const t = s.get('tab');
     return {
-        tab: (s.get('tab') === 'latest' ? 'latest' : 'brief') as Tab,
+        tab: (t === 'latest' || t === 'trending' ? t : 'brief') as Tab,
         cat: s.get('cat') || 'All',
         q: s.get('q') || '',
         page: Math.max(1, parseInt(s.get('page') || '1', 10) || 1),
@@ -203,7 +210,9 @@ export default function NewsList() {
     function handleTabListKey(e: React.KeyboardEvent) {
         if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
         e.preventDefault();
-        handleTabChange(activeTab === 'brief' ? 'latest' : 'brief');
+        const i = TABS.findIndex((t) => t.id === activeTab);
+        const next = e.key === 'ArrowRight' ? TABS[(i + 1) % TABS.length] : TABS[(i + TABS.length - 1) % TABS.length];
+        handleTabChange(next.id);
     }
 
     function handlePageChange(page: number) {
@@ -241,17 +250,16 @@ export default function NewsList() {
                             ]}
                         />
                     </div>
-                    <div className="bg-white border border-gray-200 rounded-md overflow-hidden animate-pulse">
-                        <div className="aspect-[16/10] bg-gray-100"></div>
-                        <div className="p-3 space-y-2">
+                    <div className="bg-white border border-gray-200 rounded-md p-3 animate-pulse">
+                        <div className="space-y-2">
                             <div className="h-2.5 bg-gray-100 w-28 rounded-md"></div>
                             <div className="h-4 bg-gray-100 w-3/4 rounded"></div>
+                            <div className="h-3 bg-gray-100 w-full rounded"></div>
                         </div>
                     </div>
                     {[...Array(4)].map((_, i) => (
-                        <div key={i} className="animate-pulse flex gap-3 bg-white border border-gray-200 rounded-md p-3">
-                            <div className="h-14 w-16 bg-gray-100 rounded-md shrink-0"></div>
-                            <div className="flex-1 space-y-2 py-1">
+                        <div key={i} className="animate-pulse bg-white border border-gray-200 rounded-md p-3">
+                            <div className="space-y-2">
                                 <div className="h-2.5 bg-gray-100 w-28 rounded-md"></div>
                                 <div className="h-4 bg-gray-100 w-3/4 rounded"></div>
                             </div>
@@ -298,37 +306,31 @@ export default function NewsList() {
                     {toast}
                 </div>
             )}
+            <p className="md:hidden mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                {formattedDate}
+            </p>
             <div className="flex items-center justify-between gap-2 mb-3 border-b border-gray-100 pb-2">
                 <div
                     role="tablist"
-                    aria-label="Switch between brief and latest news"
+                    aria-label="Switch between brief, latest and trending"
                     onKeyDown={handleTabListKey}
-                    className="inline-flex w-auto bg-white border border-gray-200 p-0.5 rounded-md gap-0.5"
+                    className="inline-flex w-auto max-w-full overflow-x-auto bg-white border border-gray-200 p-0.5 rounded-md gap-0.5"
                 >
-                    <button
-                        role="tab"
-                        aria-selected={activeTab === 'brief'}
-                        tabIndex={activeTab === 'brief' ? 0 : -1}
-                        onClick={() => handleTabChange('brief')}
-                        className={`min-h-[32px] rounded-md px-3 sm:px-4 text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2 active:scale-[0.98] ${activeTab === 'brief'
-                            ? 'bg-[#001f3f] text-white shadow-md shadow-blue-900/20'
-                            : 'text-gray-600 hover:text-gray-900'
-                            }`}
-                    >
-                        Daily Brief
-                    </button>
-                    <button
-                        role="tab"
-                        aria-selected={activeTab === 'latest'}
-                        tabIndex={activeTab === 'latest' ? 0 : -1}
-                        onClick={() => handleTabChange('latest')}
-                        className={`min-h-[32px] rounded-md px-3 sm:px-4 text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2 active:scale-[0.98] ${activeTab === 'latest'
-                            ? 'bg-[#001f3f] text-white shadow-md shadow-blue-900/20'
-                            : 'text-gray-600 hover:text-gray-900'
-                            }`}
-                    >
-                        Latest News
-                    </button>
+                    {TABS.map((t) => (
+                        <button
+                            key={t.id}
+                            role="tab"
+                            aria-selected={activeTab === t.id}
+                            tabIndex={activeTab === t.id ? 0 : -1}
+                            onClick={() => handleTabChange(t.id)}
+                            className={`min-h-[32px] rounded-md px-3 sm:px-4 text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2 active:scale-[0.98] ${activeTab === t.id
+                                ? 'bg-[#001f3f] text-white shadow-md shadow-blue-900/20'
+                                : 'text-gray-600 hover:text-gray-900'
+                                }`}
+                        >
+                            {t.label}
+                        </button>
+                    ))}
                 </div>
                 <div className="flex items-center gap-2 shrink-0 min-w-0">
                     <span className="hidden md:block text-[11px] font-bold uppercase tracking-wide text-gray-900 truncate">
@@ -343,65 +345,29 @@ export default function NewsList() {
             {activeTab === 'brief' ? (
                 <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
                     <DailyDigest />
-                    <aside className="hidden lg:block space-y-4 lg:sticky lg:top-20">
+                    <aside className="space-y-4 lg:sticky lg:top-20">
                         <div className="bg-white border border-gray-200 rounded-md p-3">
                             <h3 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mb-3">
-                                Trending now
+                                Keep exploring
                             </h3>
-                            <div className="space-y-3">
-                                {trending.map((t, i) => (
-                                    <button
-                                        key={`${t.id}-${i}`}
-                                        onClick={() => handleSelect(t)}
-                                        className="w-full text-left flex gap-3 group hover:bg-gray-50 rounded-md p-1 -m-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
-                                    >
-                                        <span className="text-lg font-bold text-gray-200 group-hover:text-[#001f3f] leading-none shrink-0 w-6">
-                                            {i + 1}
-                                        </span>
-                                        <span className="min-w-0">
-                                            <span className="block text-sm font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-[#001f3f]">
-                                                {t.title}
-                                            </span>
-                                            <span className="block mt-1 text-[11px] text-gray-600 uppercase tracking-wide truncate">
-                                                {t.source} • {t.category}
-                                            </span>
-                                        </span>
-                                    </button>
-                                ))}
+                            <div className="space-y-2">
+                                <button
+                                    onClick={() => handleTabChange('latest')}
+                                    className="w-full min-h-[32px] text-[11px] font-bold uppercase tracking-wide text-[#001f3f] border border-gray-200 rounded-md hover:border-[#001f3f] hover:bg-gray-50 transition-colors whitespace-nowrap active:scale-[0.99]"
+                                >
+                                    View all news →
+                                </button>
+                                <button
+                                    onClick={() => handleTabChange('trending')}
+                                    className="w-full min-h-[32px] text-[11px] font-bold uppercase tracking-wide text-[#001f3f] border border-gray-200 rounded-md hover:border-[#001f3f] hover:bg-gray-50 transition-colors whitespace-nowrap active:scale-[0.99]"
+                                >
+                                    See trending →
+                                </button>
                             </div>
-                            <button
-                                onClick={() => handleTabChange('latest')}
-                                className="mt-3 w-full min-h-[32px] text-[11px] font-bold uppercase tracking-wide text-[#001f3f] border border-gray-200 rounded-md hover:border-[#001f3f] hover:bg-gray-50 transition-colors whitespace-nowrap active:scale-[0.99]"
-                            >
-                                View all news →
-                            </button>
                         </div>
                     </aside>
-                    <details open className="lg:hidden bg-white border border-gray-200 rounded-md group">
-                        <summary className="cursor-pointer list-none p-3 flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-wide text-[#001f3f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] rounded-md">
-                            <span>Trending now ({trending.length})</span>
-                            <svg className="w-3.5 h-3.5 shrink-0 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </summary>
-                        <div className="px-3 pb-3 space-y-3">
-                            {trending.map((t, i) => (
-                                <button
-                                    key={`${t.id}-${i}`}
-                                    onClick={() => handleSelect(t)}
-                                    className="w-full text-left flex gap-3 group rounded-md"
-                                >
-                                    <span className="text-lg font-bold text-gray-200 leading-none shrink-0 w-6">{i + 1}</span>
-                                    <span className="min-w-0">
-                                        <span className="block text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{t.title}</span>
-                                        <span className="block mt-1 text-[11px] text-gray-600 uppercase tracking-wide truncate">{t.source} • {t.category}</span>
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                    </details>
                 </div>
-            ) : (
+            ) : activeTab === 'latest' ? (
                 <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
                     <div className="min-w-0">
                         <div className="bg-white border border-gray-200 rounded-md px-3 pt-2 pb-3">
@@ -437,44 +403,25 @@ export default function NewsList() {
                                         {heroItem && (
                                             <article
                                                 onClick={() => handleSelect(heroItem)}
-                                                className="group cursor-pointer mb-2 rounded-md overflow-hidden border border-gray-200 hover:border-gray-300 hover:shadow-sm transition-all active:scale-[0.995] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
-                                                tabIndex={0}
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter') handleSelect(heroItem);
                                                 }}
+                                                tabIndex={0}
+                                                className="group cursor-pointer mb-2 rounded-md border-l-2 border-[#001f3f] bg-gray-50 pl-4 pr-3 py-3 hover:bg-gray-100/70 transition-colors active:scale-[0.995] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
                                             >
-                                                {heroItem.imageUrl ? (
-                                                    <div className="relative">
-                                                        <img
-                                                            src={heroItem.imageUrl}
-                                                            alt={heroItem.title}
-                                                            loading="lazy"
-                                                            sizes="(max-width: 1024px) 100vw, 640px"
-                                                            className="w-full aspect-[16/10] object-cover bg-gray-100"
-                                                        />
-                                                        <span className="absolute top-3 left-3 px-2.5 py-1 bg-[#001f3f] text-white rounded-md text-[10px] font-bold uppercase tracking-wide whitespace-nowrap">
-                                                            Top story • {heroItem.category}
-                                                        </span>
-                                                    </div>
-                                                ) : (
-                                                    <div className="w-full aspect-[16/10] bg-[#001f3f] flex flex-col justify-end p-4">
-                                                        <span className="self-start px-2.5 py-1 bg-white/15 text-white rounded-md text-[10px] font-bold uppercase tracking-wide whitespace-nowrap mb-2">
-                                                            Top story • {heroItem.category}
-                                                        </span>
-                                                        <span className="text-white/60 text-[11px] uppercase tracking-wide">{heroItem.source}</span>
-                                                    </div>
-                                                )}
-                                                <div className="p-3">
-                                                    <h3 className="text-[17px] md:text-xl font-bold text-gray-900 group-hover:text-[#001f3f] leading-tight">
-                                                        {heroItem.title}
-                                                    </h3>
-                                                    <p className="mt-1.5 text-sm text-gray-600 line-clamp-2">
-                                                        {heroItem.contentSnippet}
-                                                    </p>
-                                                    <p className="mt-2 text-[11px] uppercase tracking-wide text-gray-600">
-                                                        {heroItem.source}
-                                                    </p>
+                                                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-gray-600 mb-1.5">
+                                                    <span className="text-[#001f3f]">Top story</span>
+                                                    <span aria-hidden="true" className="text-gray-300">•</span>
+                                                    <span>{heroItem.category}</span>
+                                                    <span aria-hidden="true" className="text-gray-300">•</span>
+                                                    <span className="truncate">{heroItem.source}</span>
                                                 </div>
+                                                <h3 className="text-[17px] md:text-xl font-bold text-gray-900 group-hover:text-[#001f3f] leading-tight">
+                                                    {heroItem.title}
+                                                </h3>
+                                                <p className="mt-1.5 text-sm text-gray-600 line-clamp-2">
+                                                    {heroItem.contentSnippet}
+                                                </p>
                                             </article>
                                         )}
                                         <div className="divide-y divide-gray-100">
@@ -550,7 +497,66 @@ export default function NewsList() {
                         </div>
                     </div>
 
-                    <aside className="hidden lg:block space-y-4 lg:sticky lg:top-20">
+                    <aside className="space-y-4 lg:sticky lg:top-20">
+                        <div className="bg-white border border-gray-200 rounded-md p-3">
+                            <h3 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mb-1">
+                                Start with the brief
+                            </h3>
+                            <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
+                                2-minute AI catch-up across {news.length} stories.
+                            </p>
+                            <div className="space-y-2">
+                                <button
+                                    onClick={() => handleTabChange('brief')}
+                                    className="w-full min-h-[32px] text-[11px] font-bold uppercase tracking-wide border border-gray-200 text-[#001f3f] rounded-md hover:border-[#001f3f] hover:bg-gray-50 transition-colors whitespace-nowrap active:scale-[0.99]"
+                                >
+                                    Read Daily Brief →
+                                </button>
+                                <button
+                                    onClick={() => handleTabChange('trending')}
+                                    className="w-full min-h-[32px] text-[11px] font-bold uppercase tracking-wide border border-gray-200 text-[#001f3f] rounded-md hover:border-[#001f3f] hover:bg-gray-50 transition-colors whitespace-nowrap active:scale-[0.99]"
+                                >
+                                    See trending →
+                                </button>
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            ) : (
+                <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
+                    <div className="bg-white border border-gray-200 rounded-md p-3 min-w-0">
+                        <h2 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mb-2 px-1">
+                            Trending now
+                        </h2>
+                        {trending.length > 0 ? (
+                            <div className="divide-y divide-gray-100">
+                                {trending.map((t, i) => (
+                                    <button
+                                        key={`${t.id}-${i}`}
+                                        onClick={() => handleSelect(t)}
+                                        className="w-full text-left flex gap-3 py-3 first:pt-1 last:pb-1 group hover:bg-gray-50 rounded-md px-1 -mx-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
+                                    >
+                                        <span className="text-2xl font-bold text-gray-200 group-hover:text-[#001f3f] leading-none shrink-0 w-8 transition-colors">
+                                            {i + 1}
+                                        </span>
+                                        <span className="min-w-0 flex-1">
+                                            <span className="block text-[15px] font-bold text-gray-900 leading-snug line-clamp-2 group-hover:text-[#001f3f]">
+                                                {t.title}
+                                            </span>
+                                            <span className="block mt-1 text-[11px] text-gray-600 uppercase tracking-wide truncate">
+                                                {t.source} • {t.category}
+                                            </span>
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="py-10 text-center text-[13px] font-semibold uppercase tracking-wide text-gray-600">
+                                No trending stories yet.
+                            </p>
+                        )}
+                    </div>
+                    <aside className="space-y-4 lg:sticky lg:top-20">
                         <div className="bg-white border border-gray-200 rounded-md p-3">
                             <h3 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mb-1">
                                 Start with the brief
@@ -565,56 +571,7 @@ export default function NewsList() {
                                 Read Daily Brief →
                             </button>
                         </div>
-                        <div className="bg-white border border-gray-200 rounded-md p-3">
-                            <h3 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mb-3">
-                                Trending now
-                            </h3>
-                            <div className="space-y-3">
-                                {trending.map((t, i) => (
-                                    <button
-                                        key={`${t.id}-${i}`}
-                                        onClick={() => handleSelect(t)}
-                                        className="w-full text-left flex gap-3 group hover:bg-gray-50 rounded-md p-1 -m-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
-                                    >
-                                        <span className="text-lg font-bold text-gray-200 group-hover:text-[#001f3f] leading-none shrink-0 w-6">
-                                            {i + 1}
-                                        </span>
-                                        <span className="min-w-0">
-                                            <span className="block text-sm font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-[#001f3f]">
-                                                {t.title}
-                                            </span>
-                                            <span className="block mt-1 text-[11px] text-gray-600 uppercase tracking-wide truncate">
-                                                {t.source} • {t.category}
-                                            </span>
-                                        </span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
                     </aside>
-                    <details open className="lg:hidden bg-white border border-gray-200 rounded-md group">
-                        <summary className="cursor-pointer list-none p-3 flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-wide text-[#001f3f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] rounded-md">
-                            <span>Trending now ({trending.length})</span>
-                            <svg className="w-3.5 h-3.5 shrink-0 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </summary>
-                        <div className="px-3 pb-3 space-y-3">
-                            {trending.map((t, i) => (
-                                <button
-                                    key={`${t.id}-${i}`}
-                                    onClick={() => handleSelect(t)}
-                                    className="w-full text-left flex gap-3 group rounded-md"
-                                >
-                                    <span className="text-lg font-bold text-gray-200 leading-none shrink-0 w-6">{i + 1}</span>
-                                    <span className="min-w-0">
-                                        <span className="block text-sm font-semibold text-gray-900 leading-snug line-clamp-2">{t.title}</span>
-                                        <span className="block mt-1 text-[11px] text-gray-600 uppercase tracking-wide truncate">{t.source} • {t.category}</span>
-                                    </span>
-                                </button>
-                            ))}
-                        </div>
-                    </details>
                 </div>
             )}
         </div>

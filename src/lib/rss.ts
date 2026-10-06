@@ -7,7 +7,6 @@ export type NewsItem = {
     pubDate: string;
     contentSnippet: string;
     source: string;
-    imageUrl?: string;
     category: string;
 };
 
@@ -33,14 +32,6 @@ const FEEDS = [
 
 ];
 
-interface CustomItem extends Parser.Item {
-    mediaContent?: {
-        $?: {
-            url?: string;
-        };
-    };
-}
-
 export async function fetchNews(): Promise<NewsItem[]> {
     const allNews: NewsItem[] = [];
 
@@ -48,8 +39,6 @@ export async function fetchNews(): Promise<NewsItem[]> {
         try {
             const parsedFeed = await parser.parseURL(feed.url);
             const items = parsedFeed.items.map((item) => {
-                const customItem = item as CustomItem;
-                const imageUrl = item.enclosure?.url || customItem.mediaContent?.$?.url;
                 const link = item.link || '#';
                 const id = Buffer.from(link).toString('base64').substring(0, 16);
 
@@ -60,10 +49,10 @@ export async function fetchNews(): Promise<NewsItem[]> {
                     pubDate: item.pubDate || new Date().toISOString(),
                     contentSnippet: item.contentSnippet || '',
                     source: feed.name,
-                    imageUrl: imageUrl,
                     category: feed.category,
                 };
             });
+
             allNews.push(...items);
         } catch (error) {
             console.error(`Error fetching from ${feed.name} (${feed.category}):`, error);
