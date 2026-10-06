@@ -17,8 +17,8 @@ body {
   font-family: var(--font-inter);
 }
 
-.container {
-  max-width: 800px !important;
+html {
+  scroll-behavior: smooth;
 }
 
 @layer components {

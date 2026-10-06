@@ -1,29 +1,39 @@
 'use client';
 
-const CATEGORIES = ['All', 'Politics', 'Business', 'Education', 'Health'];
+const CATEGORIES = ['All', 'Politics', 'Business', 'Education', 'Health', 'General'];
 
 type CategoryFilterProps = {
     activeCategory: string;
     onCategoryChange: (category: string) => void;
+    counts?: Record<string, number>;
 };
 
-export default function CategoryFilter({ activeCategory, onCategoryChange }: CategoryFilterProps) {
+export default function CategoryFilter({ activeCategory, onCategoryChange, counts }: CategoryFilterProps) {
     return (
-        <div className="flex items-center gap-6 overflow-x-auto pb-4 mb-4 scrollbar-hide no-scrollbar">
-            {CATEGORIES.map((category) => (
-                <button
-                    key={category}
-                    onClick={() => onCategoryChange(category)}
-                    className={`
-            text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all
-            ${activeCategory === category
-                            ? 'text-[#001f3f] border-b-2 border-[#001f3f] pb-1'
-                            : 'text-gray-400 hover:text-gray-600 border-b-2 border-transparent pb-1'}
-          `}
-                >
-                    {category}
-                </button>
-            ))}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-1 px-1" role="tablist" aria-label="Filter by category">
+            {CATEGORIES.map((category) => {
+                const count = counts?.[category];
+                const isActive = activeCategory === category;
+                return (
+                    <button
+                        key={category}
+                        role="tab"
+                        aria-selected={isActive}
+                        onClick={() => onCategoryChange(category)}
+                        className={`shrink-0 min-h-[44px] px-4 rounded-full text-xs font-black uppercase tracking-[0.15em] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2 ${isActive
+                            ? 'bg-[#001f3f] text-white shadow-md shadow-blue-900/20'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+                            }`}
+                    >
+                        {category}
+                        {typeof count === 'number' && (
+                            <span className={`ml-2 text-[11px] font-bold ${isActive ? 'text-white/70' : 'text-gray-400'}`}>
+                                {count}
+                            </span>
+                        )}
+                    </button>
+                );
+            })}
         </div>
     );
 }
