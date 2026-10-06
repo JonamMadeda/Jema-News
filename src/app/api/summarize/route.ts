@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
+import { completeWithFallback } from '@/lib/ai';
 
 export const dynamic = 'force-dynamic';
-
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const MODEL = process.env.OPENROUTER_MODEL || 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free';
 
 export async function POST(req: Request) {
     const apiKey = process.env.OPENROUTER_API_KEY;
@@ -17,45 +15,27 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing title' }, { status: 400 });
         }
 
-        const response = await fetch(OPENROUTER_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${apiKey}`,
-                'HTTP-Referer': 'https://jema-news.local',
-                'X-Title': 'Jema News',
-            },
-            body: JSON.stringify({
-                model: MODEL,
-                messages: [
-                    {
-                        role: 'system',
-                        content:
-                            'You are a Kenyan news summarizer. Summarize the article in 3 concise bullet points (max 80 words total). Neutral tone, no hallucinations, no links. Return markdown bullets.',
-                    },
-                    {
-                        role: 'user',
-                        content: `Title: ${title}\nSource: ${source || 'Unknown'} | Category: ${category || 'General'}\nExcerpt: ${(snippet || '').slice(0, 800)}`,
-                    },
-                ],
-                temperature: 0.3,
-                max_tokens: 300,
-            }),
-        });
-
-        if (!response.ok) {
-            return NextResponse.json({ error: 'AI provider failed. Try again later.' }, { status: 502 });
-        }
-
-        const json = await response.json();
-        const summary: string | undefined = json?.choices?.[0]?.message?.content;
-        if (!summary) {
-            return NextResponse.json({ error: 'AI returned empty summary' }, { status: 502 });
-        }
+        const { text: summary } = await completeWithFallback(
+            apiKey,
+            [
+                {
+                    role: 'system',
+                    content:
+                        'Output only 3 concise markdown bullets summarizing the article (max 80 words total). No preamble, no explanation. Neutral tone, no hallucinations, no links.',
+                },
+                {
+                    role: 'user',
+                    content: `Title: ${title}\nSource: ${source || 'Unknown'} | Category: ${category || 'General'}\nExcerpt: ${(snippet || '').slice(0, 800)}`,
+                },
+            ],
+            { temperature: 0.3, maxTokens: 500 }
+        );
 
         return NextResponse.json({ summary });
     } catch (error) {
         console.error('Summarize error:', error);
-        return NextResponse.json({ error: 'Failed to summarize' }, { status: 500 });
+        const message = error instanceof Error ? error.message : 'Failed to summarize';
+        const status = message.includes('rate-limited') ? 429 : 502;
+        return NextResponse.json({ error: message }, { status });
     }
 }

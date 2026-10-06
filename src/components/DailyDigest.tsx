@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import LoadingMessage from './LoadingMessage';
 import { setAppTab } from './Navbar';
 
 type DigestResponse = {
@@ -72,12 +73,15 @@ export default function DailyDigest() {
     if (loading) {
         return (
             <div className="space-y-3" aria-busy="true" aria-label="Loading daily brief">
-                <div className="bg-[#001f3f] rounded-md p-3 animate-pulse">
-                    <div className="h-3 bg-white/20 w-40 rounded-md mb-2"></div>
-                    <div className="flex gap-1.5">
-                        <div className="h-5 bg-white/10 w-20 rounded-md"></div>
-                        <div className="h-5 bg-white/10 w-20 rounded-md"></div>
-                    </div>
+                <div className="bg-[#001f3f] rounded-md p-3">
+                    <LoadingMessage
+                        dark
+                        stages={[
+                            'Reading today’s top stories…',
+                            'Asking the AI to brief you…',
+                            'Writing your briefing…',
+                        ]}
+                    />
                 </div>
                 <div className="bg-white border border-gray-200 rounded-md p-3 animate-pulse space-y-2">
                     <div className="h-3 bg-gray-100 w-1/3 rounded-md"></div>

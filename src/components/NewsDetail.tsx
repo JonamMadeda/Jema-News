@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import LoadingMessage from './LoadingMessage';
 import { NewsItem } from '@/lib/rss';
 
 type NewsDetailProps = {
@@ -141,10 +142,13 @@ export default function NewsDetail({ item, onBack }: NewsDetailProps) {
                         )}
                     </div>
                     {summarizing ? (
-                        <div className="space-y-2 animate-pulse" aria-busy="true" aria-label="Summarizing story">
-                            <div className="h-3 bg-gray-200 w-full rounded-md"></div>
-                            <div className="h-3 bg-gray-200 w-11/12 rounded-md"></div>
-                            <div className="h-3 bg-gray-200 w-4/5 rounded-md"></div>
+                        <div className="space-y-2.5" aria-busy="true" aria-label="Summarizing story">
+                            <LoadingMessage stages={['Reading this story…', 'Writing 3 key points…']} />
+                            <div className="space-y-2 animate-pulse pt-1">
+                                <div className="h-3 bg-gray-200 w-full rounded-md"></div>
+                                <div className="h-3 bg-gray-200 w-11/12 rounded-md"></div>
+                                <div className="h-3 bg-gray-200 w-4/5 rounded-md"></div>
+                            </div>
                         </div>
                     ) : summary ? (
                         <div className="text-sm leading-relaxed text-gray-700">

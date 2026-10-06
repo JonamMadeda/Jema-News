@@ -7,6 +7,7 @@ import SearchBar from './SearchBar';
 import CategoryFilter from './CategoryFilter';
 import NewsDetail from './NewsDetail';
 import DailyDigest from './DailyDigest';
+import LoadingMessage from './LoadingMessage';
 import { TAB_EVENT, REFRESH_EVENT, getInitialTab, setAppTab } from './Navbar';
 
 type Tab = 'latest' | 'brief';
@@ -231,6 +232,15 @@ export default function NewsList() {
         return (
             <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start" aria-busy="true" aria-label="Loading news">
                 <div className="space-y-4">
+                    <div className="bg-white border border-gray-200 rounded-md p-3">
+                        <LoadingMessage
+                            stages={[
+                                'Connecting to Kenyan outlets…',
+                                'Gathering the latest headlines…',
+                                'Sorting stories by recency…',
+                            ]}
+                        />
+                    </div>
                     <div className="bg-white border border-gray-200 rounded-md overflow-hidden animate-pulse">
                         <div className="aspect-[16/10] bg-gray-100"></div>
                         <div className="p-3 space-y-2">
