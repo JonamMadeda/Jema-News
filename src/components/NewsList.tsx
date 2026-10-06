@@ -188,7 +188,7 @@ export default function NewsList() {
     const startIndex = (safePage - 1) * ITEMS_PER_PAGE;
     const paginatedNews = filteredNews.slice(startIndex, startIndex + ITEMS_PER_PAGE);
     const isFiltering = searchQuery.trim() !== '' || activeCategory !== 'All';
-    const trending = news.slice(0, 5);
+    const trending = news.slice(0, 8);
     const showHero = !isFiltering && safePage === 1 && paginatedNews.length > 0;
     const heroItem = showHero ? paginatedNews[0] : null;
     const restItems = showHero ? paginatedNews.slice(1) : paginatedNews;
@@ -377,9 +377,12 @@ export default function NewsList() {
                             </button>
                         </div>
                     </aside>
-                    <details className="lg:hidden bg-white border border-gray-200 rounded-md">
-                        <summary className="cursor-pointer list-none p-3 text-[11px] font-bold uppercase tracking-wide text-[#001f3f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] rounded-md">
-                            Trending now ({trending.length})
+                    <details open className="lg:hidden bg-white border border-gray-200 rounded-md group">
+                        <summary className="cursor-pointer list-none p-3 flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-wide text-[#001f3f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] rounded-md">
+                            <span>Trending now ({trending.length})</span>
+                            <svg className="w-3.5 h-3.5 shrink-0 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                            </svg>
                         </summary>
                         <div className="px-3 pb-3 space-y-3">
                             {trending.map((t, i) => (
@@ -589,9 +592,12 @@ export default function NewsList() {
                             </div>
                         </div>
                     </aside>
-                    <details className="lg:hidden bg-white border border-gray-200 rounded-md">
-                        <summary className="cursor-pointer list-none p-3 text-[11px] font-bold uppercase tracking-wide text-[#001f3f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] rounded-md">
-                            Trending now ({trending.length})
+                    <details open className="lg:hidden bg-white border border-gray-200 rounded-md group">
+                        <summary className="cursor-pointer list-none p-3 flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-wide text-[#001f3f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] rounded-md">
+                            <span>Trending now ({trending.length})</span>
+                            <svg className="w-3.5 h-3.5 shrink-0 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                            </svg>
                         </summary>
                         <div className="px-3 pb-3 space-y-3">
                             {trending.map((t, i) => (
