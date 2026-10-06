@@ -46,7 +46,7 @@ export default function Navbar() {
                     <span className="w-7 h-7 bg-[#001f3f] rounded-md flex items-center justify-center shrink-0">
                         <span className={`${brand.className} text-white font-bold text-[14px] leading-none tracking-tight`}>J</span>
                     </span>
-                    <span className={`${brand.className} text-[18px] font-bold leading-none tracking-tight text-[#001f3f] whitespace-nowrap hidden min-[400px]:inline`}>
+                    <span className={`${brand.className} text-[16px] min-[400px]:text-[18px] font-bold leading-none tracking-tight text-[#001f3f] whitespace-nowrap`}>
                         Jemanews
                     </span>
                 </a>
