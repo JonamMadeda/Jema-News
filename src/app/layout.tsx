@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Fraunces } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 
-const inter = Inter({ subsets: ["latin"] });
+const brand = Fraunces({ subsets: ["latin"], weight: ["500", "600", "700"], style: ["normal", "italic"] });
 
 export const metadata: Metadata = {
   title: "Jema News | Minimal Kenyan News",
@@ -27,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en-US">
-      <body className={`${inter.className} antialiased selection:bg-blue-100 notranslate`}>
+      <body className="font-sans antialiased selection:bg-blue-100 notranslate text-[15px] leading-normal">
         <meta name="application-name" content="Jema News" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -39,17 +39,17 @@ export default function RootLayout({
         <meta name="google" content="notranslate" />
 
         <header className="border-b border-gray-100 sticky top-0 bg-white/90 backdrop-blur-sm z-50">
-          <div className="container mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
-            <div className="flex items-center gap-2 md:gap-3">
-              <div className="w-7 h-7 md:w-9 md:h-9 bg-[#001f3f] rounded flex items-center justify-center">
-                <span className="text-white font-black text-lg md:xl italic">J</span>
+          <div className="mx-auto w-full max-w-3xl px-4 h-14 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-[#001f3f] rounded-md flex items-center justify-center shrink-0">
+                <span className={`${brand.className} text-white font-semibold text-[15px] leading-none`}>J</span>
               </div>
-              <h1 className="text-xl md:text-2xl font-black tracking-tighter text-[#001f3f]">
-                JEMA<span className="font-light text-gray-400">NEWS</span>
+              <h1 className={`${brand.className} text-[21px] leading-none tracking-tight text-[#001f3f] whitespace-nowrap`}>
+                Jema<span className="font-light italic text-gray-400"> News</span>
               </h1>
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase px-2 py-1 bg-gray-100 text-gray-400 rounded">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold tracking-wide uppercase px-2 py-1 bg-gray-100 text-gray-500 rounded-full whitespace-nowrap">
                 Kenya
               </span>
             </div>
@@ -58,9 +58,9 @@ export default function RootLayout({
         <main className="min-h-screen">
           {children}
         </main>
-        <footer className="py-12 border-t border-gray-50 mt-20">
-          <div className="container mx-auto px-6 text-center">
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-widest">
+        <footer className="py-8 border-t border-gray-100 mt-12">
+          <div className="mx-auto w-full max-w-3xl px-4 text-center">
+            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">
               Built for Kenya · {new Date().getFullYear()}
             </p>
           </div>

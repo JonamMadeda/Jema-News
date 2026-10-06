@@ -3,7 +3,7 @@
 @theme {
   --color-navy: #001f3f;
   --color-navy-light: #003366;
-  --font-inter: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
 :root {
@@ -14,7 +14,9 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: var(--font-inter);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
 }
 
 html {

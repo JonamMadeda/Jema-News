@@ -126,14 +126,14 @@ export default function NewsList() {
 
     if (loading) {
         return (
-            <div className="space-y-6 py-10" aria-busy="true" aria-label="Loading news">
+            <div className="space-y-4 py-6" aria-busy="true" aria-label="Loading news">
                 {[...Array(5)].map((_, i) => (
-                    <div key={i} className="animate-pulse flex gap-4">
-                        <div className="h-20 w-24 md:h-28 md:w-40 bg-gray-100 rounded-md shrink-0"></div>
-                        <div className="flex-1 space-y-3 py-1">
-                            <div className="h-3 bg-gray-100 w-32 rounded-full"></div>
-                            <div className="h-5 bg-gray-100 w-3/4 rounded"></div>
-                            <div className="h-4 bg-gray-100 w-full rounded"></div>
+                    <div key={i} className="animate-pulse flex gap-3">
+                        <div className="h-16 w-20 md:h-20 md:w-32 bg-gray-100 rounded-md shrink-0"></div>
+                        <div className="flex-1 space-y-2 py-1">
+                            <div className="h-2.5 bg-gray-100 w-28 rounded-full"></div>
+                            <div className="h-4 bg-gray-100 w-3/4 rounded"></div>
+                            <div className="h-3 bg-gray-100 w-full rounded"></div>
                         </div>
                     </div>
                 ))}
@@ -143,12 +143,12 @@ export default function NewsList() {
 
     if (error) {
         return (
-            <div className="text-center py-20">
+            <div className="text-center py-14">
                 <div className="text-gray-500">
-                    <p className="text-sm uppercase tracking-widest font-bold mb-4">{error}</p>
+                    <p className="text-[13px] uppercase tracking-wide font-semibold mb-4">{error}</p>
                     <button
                         onClick={() => window.location.reload()}
-                        className="min-h-[44px] text-xs font-black uppercase tracking-widest px-6 py-3 bg-[#001f3f] text-white rounded-full hover:bg-[#003366] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2"
+                        className="min-h-[38px] text-[11px] font-bold uppercase tracking-wide px-5 py-2 bg-[#001f3f] text-white rounded-full hover:bg-[#003366] transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2"
                     >
                         Retry
                     </button>
@@ -164,25 +164,25 @@ export default function NewsList() {
             <div
                 role="tablist"
                 aria-label="Switch between brief and latest news"
-                className="bg-gray-100 p-1.5 rounded-full flex gap-1 mb-8"
+                className="bg-gray-100 p-1 rounded-full flex gap-1 mb-5"
             >
                 <button
                     role="tab"
                     aria-selected={activeTab === 'brief'}
                     onClick={() => handleTabChange('brief')}
-                    className={`flex-1 min-h-[44px] rounded-full px-5 text-xs font-black uppercase tracking-[0.15em] transition-all flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2 ${activeTab === 'brief'
+                    className={`flex-1 min-h-[38px] rounded-full px-3 text-[11px] font-bold uppercase tracking-wide transition-all flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2 ${activeTab === 'brief'
                         ? 'bg-[#001f3f] text-white shadow-md shadow-blue-900/20'
                         : 'text-gray-500 hover:text-gray-900'
                         }`}
                 >
-                    <span className={`w-1.5 h-1.5 rounded-full ${activeTab === 'brief' ? 'bg-emerald-400' : 'bg-gray-400'}`}></span>
+                    <span className={`w-1.5 h-1.5 rounded-full ${activeTab === 'brief' ? 'bg-amber-400' : 'bg-gray-400'}`}></span>
                     Daily Brief
                 </button>
                 <button
                     role="tab"
                     aria-selected={activeTab === 'latest'}
                     onClick={() => handleTabChange('latest')}
-                    className={`flex-1 min-h-[44px] rounded-full px-5 text-xs font-black uppercase tracking-[0.15em] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2 ${activeTab === 'latest'
+                    className={`flex-1 min-h-[38px] rounded-full px-3 text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2 ${activeTab === 'latest'
                         ? 'bg-[#001f3f] text-white shadow-md shadow-blue-900/20'
                         : 'text-gray-500 hover:text-gray-900'
                         }`}
@@ -195,7 +195,7 @@ export default function NewsList() {
                 <DailyDigest />
             ) : (
                 <>
-                    <div className="sticky top-16 md:top-20 z-30 bg-white/95 backdrop-blur-sm -mx-1 px-1 pt-2 pb-3 border-b border-gray-100">
+                    <div className="sticky top-14 z-30 bg-white/95 backdrop-blur-sm -mx-1 px-1 pt-2 pb-2 border-b border-gray-100">
                         <SearchBar value={searchQuery} onChange={setSearchQuery} />
                         <CategoryFilter
                             activeCategory={activeCategory}
@@ -205,7 +205,7 @@ export default function NewsList() {
                     </div>
 
                     {isFiltering && (
-                        <p className="mt-4 text-xs font-bold uppercase tracking-widest text-gray-500" role="status">
+                        <p className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-gray-500" role="status">
                             {filteredNews.length} result{filteredNews.length === 1 ? '' : 's'}
                             {searchQuery.trim() && <> for &ldquo;{searchQuery.trim()}&rdquo;</>}
                             {activeCategory !== 'All' && <> in {activeCategory}</>}
@@ -239,8 +239,8 @@ export default function NewsList() {
                                 </div>
 
                                 {totalPages > 1 && (
-                                    <nav aria-label="News pages" className="mt-10 flex flex-col gap-4 border-t border-gray-100 pt-6">
-                                        <div className="flex items-center justify-center gap-2 flex-wrap">
+                                    <nav aria-label="News pages" className="mt-8 flex flex-col gap-3 border-t border-gray-100 pt-5">
+                                        <div className="flex items-center justify-center gap-1.5 flex-wrap">
                                             {getPageNumbers(currentPage, totalPages).map((p, i) =>
                                                 p === '…' ? (
                                                     <span key={`e-${i}`} className="text-gray-400 px-1">…</span>
@@ -249,7 +249,7 @@ export default function NewsList() {
                                                         key={p}
                                                         onClick={() => handlePageChange(p)}
                                                         aria-current={p === currentPage ? 'page' : undefined}
-                                                        className={`min-w-[44px] min-h-[44px] px-3 rounded-full text-xs font-black transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] ${p === currentPage
+                                                        className={`min-w-[36px] min-h-[36px] px-2.5 rounded-full text-[13px] font-semibold whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] ${p === currentPage
                                                             ? 'bg-[#001f3f] text-white'
                                                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                                             }`}
@@ -263,17 +263,17 @@ export default function NewsList() {
                                             <button
                                                 onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
                                                 disabled={currentPage === 1}
-                                                className="min-h-[44px] text-xs font-black uppercase tracking-[0.2em] text-[#001f3f] disabled:text-gray-300 flex items-center gap-2 px-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
+                                                className="min-h-[36px] text-[11px] font-bold uppercase tracking-wide text-[#001f3f] disabled:text-gray-300 flex items-center gap-1.5 px-2 rounded-full whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
                                             >
-                                                ← Previous
+                                                ← Prev
                                             </button>
-                                            <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-                                                Page {currentPage} of {totalPages}
+                                            <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
+                                                {currentPage} / {totalPages}
                                             </span>
                                             <button
                                                 onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
                                                 disabled={currentPage === totalPages}
-                                                className="min-h-[44px] text-xs font-black uppercase tracking-[0.2em] text-[#001f3f] disabled:text-gray-300 flex items-center gap-2 px-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
+                                                className="min-h-[36px] text-[11px] font-bold uppercase tracking-wide text-[#001f3f] disabled:text-gray-300 flex items-center gap-1.5 px-2 rounded-full whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
                                             >
                                                 Next →
                                             </button>
@@ -282,16 +282,16 @@ export default function NewsList() {
                                 )}
                             </>
                         ) : (
-                            <div className="py-20 text-center">
-                                <p className="text-sm font-bold uppercase tracking-[0.2em] text-gray-500 mb-4">
-                                    No articles found matching your criteria.
+                            <div className="py-14 text-center">
+                                <p className="text-[13px] font-semibold uppercase tracking-wide text-gray-500 mb-4">
+                                    No articles found.
                                 </p>
                                 <button
                                     onClick={() => {
                                         setSearchQuery('');
                                         setActiveCategory('All');
                                     }}
-                                    className="min-h-[44px] text-xs font-black uppercase tracking-widest px-6 py-3 border border-gray-300 rounded-full hover:border-[#001f3f] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
+                                    className="min-h-[38px] text-[11px] font-bold uppercase tracking-wide px-5 py-2 border border-gray-300 rounded-full hover:border-[#001f3f] transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
                                 >
                                     Clear filters
                                 </button>
