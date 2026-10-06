@@ -12,6 +12,7 @@ type CachedDigest = {
     headlineCount: number;
     generatedAt: string;
     model: string;
+    sources: string[];
 };
 
 // In-memory cache (per server instance) to avoid burning credits
@@ -90,6 +91,7 @@ export async function GET() {
             headlineCount: top.length,
             generatedAt: new Date().toISOString(),
             model: json?.model || MODEL,
+            sources: [...new Set(top.map((t) => t.source))].slice(0, 6),
         };
 
         cache = { data, expiresAt: Date.now() + CACHE_TTL_MS };

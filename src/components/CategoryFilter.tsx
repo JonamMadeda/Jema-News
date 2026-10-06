@@ -20,7 +20,7 @@ export default function CategoryFilter({ activeCategory, onCategoryChange, count
                         role="tab"
                         aria-selected={isActive}
                         onClick={() => onCategoryChange(category)}
-                        className={`shrink-0 whitespace-nowrap min-h-[34px] px-3.5 rounded-full text-[11px] font-semibold uppercase tracking-wide transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2 ${isActive
+                        className={`shrink-0 whitespace-nowrap min-h-[32px] px-3 rounded-md text-[11px] font-semibold uppercase tracking-wide transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2 ${isActive
                             ? 'bg-[#001f3f] text-white shadow-md shadow-blue-900/20'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
                             }`}

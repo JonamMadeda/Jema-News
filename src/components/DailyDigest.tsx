@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import { setAppTab } from './Navbar';
 
 type DigestResponse = {
     briefing: string;
     headlineCount: number;
     generatedAt: string;
     model: string;
+    sources?: string[];
     cached?: boolean;
     error?: string;
 };
@@ -18,12 +20,21 @@ function readingTime(text: string): string {
     return `~${mins} min`;
 }
 
+function timeAgo(iso: string): string {
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const h = Math.floor(mins / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
+}
+
 export default function DailyDigest() {
     const [data, setData] = useState<DigestResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
-    const [canShare, setCanShare] = useState(false);
 
     async function load() {
         setLoading(true);
@@ -42,7 +53,9 @@ export default function DailyDigest() {
 
     useEffect(() => {
         load();
-        if (typeof navigator !== 'undefined' && 'share' in navigator) setCanShare(true);
+        const onRefresh = () => load();
+        window.addEventListener('jema:digest-refresh', onRefresh);
+        return () => window.removeEventListener('jema:digest-refresh', onRefresh);
     }, []);
 
     async function handleCopy() {
@@ -56,27 +69,18 @@ export default function DailyDigest() {
         }
     }
 
-    async function handleShare() {
-        if (!data?.briefing) return;
-        try {
-            await navigator.share({ title: "Today's Brief — Jema News", text: data.briefing });
-        } catch {
-            // user dismissed — ignore
-        }
-    }
-
     if (loading) {
         return (
             <div className="space-y-3" aria-busy="true" aria-label="Loading daily brief">
-                <div className="bg-[#001f3f] rounded-lg p-4 animate-pulse">
-                    <div className="h-3 bg-white/20 w-40 rounded-full mb-2"></div>
+                <div className="bg-[#001f3f] rounded-md p-3 animate-pulse">
+                    <div className="h-3 bg-white/20 w-40 rounded-md mb-2"></div>
                     <div className="flex gap-1.5">
-                        <div className="h-5 bg-white/10 w-20 rounded-full"></div>
-                        <div className="h-5 bg-white/10 w-20 rounded-full"></div>
+                        <div className="h-5 bg-white/10 w-20 rounded-md"></div>
+                        <div className="h-5 bg-white/10 w-20 rounded-md"></div>
                     </div>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-lg p-4 animate-pulse space-y-2">
-                    <div className="h-3 bg-gray-100 w-1/3 rounded-full"></div>
+                <div className="bg-white border border-gray-200 rounded-md p-3 animate-pulse space-y-2">
+                    <div className="h-3 bg-gray-100 w-1/3 rounded-md"></div>
                     <div className="h-3 bg-gray-100 w-full rounded"></div>
                     <div className="h-3 bg-gray-100 w-11/12 rounded"></div>
                 </div>
@@ -86,88 +90,107 @@ export default function DailyDigest() {
 
     if (error) {
         return (
-            <div className="border border-dashed border-gray-300 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gray-50">
-                <div className="min-w-0">
-                    <p className="text-[11px] font-bold uppercase tracking-wide text-gray-900 mb-0.5">
-                        Brief unavailable
-                    </p>
-                    <p className="text-sm text-gray-600 truncate">{error}</p>
+            <div className="border border-dashed border-gray-300 rounded-md p-4 bg-white">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-gray-900 mb-1">
+                    Brief unavailable
+                </p>
+                <p className="text-sm text-gray-600 mb-3">{error}. You can still browse the latest headlines.</p>
+                <div className="flex gap-2 flex-wrap">
+                    <button
+                        onClick={load}
+                        className="min-h-[32px] text-[11px] font-bold uppercase tracking-wide px-4 py-1.5 bg-[#001f3f] text-white rounded-md hover:bg-[#003366] transition-colors whitespace-nowrap active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2"
+                    >
+                        Retry
+                    </button>
+                    <button
+                        onClick={() => { setAppTab('latest'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                        className="min-h-[32px] text-[11px] font-bold uppercase tracking-wide px-4 py-1.5 border border-gray-200 text-[#001f3f] rounded-md hover:border-[#001f3f] transition-colors whitespace-nowrap active:scale-[0.98]"
+                    >
+                        Browse latest →
+                    </button>
                 </div>
-                <button
-                    onClick={load}
-                    className="min-h-[36px] text-[11px] font-bold uppercase tracking-wide px-4 py-1.5 bg-[#001f3f] text-white rounded-full hover:bg-[#003366] transition-colors whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2"
-                >
-                    Retry
-                </button>
             </div>
         );
     }
 
     if (!data) return null;
 
-    const date = new Date(data.generatedAt).toLocaleString('en-KE', {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit',
-    });
+    const shareText = encodeURIComponent(`Today's Brief — Jemanews\n\n${data.briefing.slice(0, 900)}`);
+    const waHref = `https://wa.me/?text=${shareText}`;
+    const xHref = `https://twitter.com/intent/tweet?text=${shareText}`;
 
     return (
         <div className="space-y-3">
-            <div className="bg-[#001f3f] text-white rounded-lg p-4">
+            <div className="bg-[#001f3f] text-white rounded-md p-3">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 mb-1">
-                            <span className="relative flex h-1.5 w-1.5 shrink-0">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-400"></span>
-                            </span>
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <h2 className="text-[11px] font-bold uppercase tracking-wide whitespace-nowrap">
                                 Today&apos;s Briefing
                             </h2>
                             {data.cached && (
-                                <span className="text-[10px] font-semibold uppercase tracking-wide bg-white/10 px-2 py-0.5 rounded-full text-white/70 whitespace-nowrap">
+                                <span className="text-[10px] font-semibold uppercase tracking-wide bg-white/10 px-2 py-0.5 rounded-md text-white/70 whitespace-nowrap">
                                     Cached
                                 </span>
                             )}
                         </div>
-                        <p className="text-[13px] text-white/70 truncate">{date}</p>
+                        <p className="text-[13px] text-white/70">Generated {timeAgo(data.generatedAt)}</p>
                         <div className="flex flex-wrap gap-1.5 mt-2">
-                            <span className="text-[10px] font-semibold uppercase tracking-wide bg-white/10 px-2.5 py-1 rounded-full whitespace-nowrap">
+                            <span className="text-[10px] font-semibold uppercase tracking-wide bg-white/10 px-2.5 py-1 rounded-md whitespace-nowrap">
                                 {data.headlineCount} stories
                             </span>
-                            <span className="text-[10px] font-semibold uppercase tracking-wide bg-white/10 px-2.5 py-1 rounded-full whitespace-nowrap">
+                            <span className="text-[10px] font-semibold uppercase tracking-wide bg-white/10 px-2.5 py-1 rounded-md whitespace-nowrap">
                                 {readingTime(data.briefing)}
                             </span>
                         </div>
+                        {data.sources && data.sources.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-2" aria-label="Sources used">
+                                {data.sources.map((s) => (
+                                    <span key={s} className="text-[10px] font-semibold uppercase tracking-wide border border-white/20 px-2 py-0.5 rounded-md text-white/70 whitespace-nowrap">
+                                        {s}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                         <button
                             onClick={handleCopy}
-                            className="min-h-[34px] text-[11px] font-bold uppercase tracking-wide px-3 py-1.5 border border-white/20 hover:bg-white/10 transition-colors rounded-full whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                            className="min-h-[32px] text-[11px] font-bold uppercase tracking-wide px-3 py-1.5 bg-white text-[#001f3f] hover:bg-white/90 transition-colors rounded-md whitespace-nowrap active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                         >
                             {copied ? 'Copied' : 'Copy'}
                         </button>
-                        {canShare && (
-                            <button
-                                onClick={handleShare}
-                                className="min-h-[34px] text-[11px] font-bold uppercase tracking-wide px-3 py-1.5 border border-white/20 hover:bg-white/10 transition-colors rounded-full whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-                            >
-                                Share
-                            </button>
-                        )}
+                        <a
+                            href={waHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="min-h-[32px] inline-flex items-center text-[11px] font-bold uppercase tracking-wide px-3 py-1.5 border border-white/20 hover:bg-white/10 transition-colors rounded-md whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                        >
+                            WhatsApp
+                        </a>
+                        <a
+                            href={xHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="min-h-[32px] inline-flex items-center text-[11px] font-bold uppercase tracking-wide px-3 py-1.5 border border-white/20 hover:bg-white/10 transition-colors rounded-md whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                        >
+                            X
+                        </a>
                         <button
                             onClick={load}
-                            className="min-h-[34px] text-[11px] font-bold uppercase tracking-wide px-3 py-1.5 bg-white text-[#001f3f] hover:bg-white/90 transition-colors rounded-full whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#001f3f]"
+                            aria-label="Regenerate brief"
+                            title="Regenerate"
+                            className="w-8 h-8 inline-flex items-center justify-center border border-white/20 hover:bg-white/10 transition-colors rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
                         >
-                            Refresh
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 4v5h5M20 20v-5h-5M5 9a8 8 0 0114-3M19 15a8 8 0 01-14 3" />
+                            </svg>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-5">
+            <div className="bg-white border border-gray-200 rounded-md p-3 md:p-4">
                 <ReactMarkdown
                     components={{
                         h1: (props) => <h3 className="text-xs font-bold uppercase tracking-wide text-[#001f3f] mt-4 mb-2 first:mt-0" {...props} />,
@@ -183,8 +206,8 @@ export default function DailyDigest() {
                     {data.briefing}
                 </ReactMarkdown>
 
-                <p className="mt-4 pt-3 border-t border-gray-100 text-[11px] text-gray-400">
-                    AI-generated — verify with originals.
+                <p className="mt-4 pt-3 border-t border-gray-100 text-[11px] text-gray-600">
+                    AI-generated from the outlets above — verify with originals.
                 </p>
             </div>
         </div>

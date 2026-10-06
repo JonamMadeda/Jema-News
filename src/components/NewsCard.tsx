@@ -32,32 +32,38 @@ export default function NewsCard({ item, onSelect }: NewsCardProps) {
                 }
             }}
             tabIndex={0}
-            className="group py-4 border-b border-gray-100 last:border-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2 rounded-md"
+            className="group py-3 border-b border-gray-100 last:border-0 cursor-pointer hover:bg-gray-50/70 active:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2 rounded-md px-1 -mx-1"
         >
             <div className="flex gap-3">
-                {showImage && (
-                    <div className="shrink-0">
+                <div className="shrink-0">
+                    {showImage ? (
                         <img
                             src={item.imageUrl}
                             alt=""
                             loading="lazy"
+                            sizes="120px"
                             onError={() => setImgHidden(true)}
-                            className="w-20 h-16 md:w-32 md:h-20 object-cover rounded-md bg-gray-100"
+                            className="w-16 h-14 md:w-28 md:h-[72px] aspect-[16/10] object-cover rounded-md bg-gray-100"
                         />
-                    </div>
-                )}
-                <div className="flex flex-col gap-1.5 min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 flex-wrap text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                        <span className="px-2 py-0.5 bg-[#001f3f] text-white rounded-full text-[10px] font-bold whitespace-nowrap">
+                    ) : (
+                        <div aria-hidden="true" className="w-16 h-14 md:w-28 md:h-[72px] aspect-[16/10] rounded-md bg-[#001f3f]/5 border border-gray-100 flex items-center justify-center">
+                            <span className="text-sm font-bold text-[#001f3f]/40">{item.source.charAt(0)}</span>
+                        </div>
+                    )}
+                </div>
+                <div className="flex flex-col gap-1 min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap text-[11px] font-semibold uppercase tracking-wide text-gray-600">
+                        <span className="px-2 py-px border border-gray-200 text-gray-600 rounded-md text-[10px] font-bold whitespace-nowrap bg-white">
                             {item.category}
                         </span>
-                        <span className="text-gray-900 font-bold truncate">{item.source}</span>
+                        <span className="text-gray-900 font-semibold truncate">{item.source}</span>
                         <span aria-hidden="true" className="text-gray-300">•</span>
                         <time className="whitespace-nowrap">{timeAgo(item.pubDate)}</time>
                     </div>
 
-                    <h3 className="text-[15px] md:text-base font-semibold text-gray-900 group-hover:text-[#001f3f] leading-snug">
+                    <h3 className="text-[16px] md:text-[17px] font-bold text-gray-900 group-hover:text-[#001f3f] leading-snug">
                         {item.title}
+                        <span aria-hidden="true" className="inline-block ml-1.5 text-[#001f3f] opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all">→</span>
                     </h3>
 
                     <p className="text-gray-600 text-sm leading-relaxed line-clamp-2">

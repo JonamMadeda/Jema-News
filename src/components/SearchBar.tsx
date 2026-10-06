@@ -9,18 +9,20 @@ export default function SearchBar({ value, onChange }: SearchBarProps) {
     return (
         <div className="relative mb-2">
             <input
+                id="news-search"
                 type="text"
-                placeholder="Search headlines…"
+                placeholder="Search headlines…  ( / )"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 aria-label="Search news"
+                autoComplete="off"
                 className="w-full bg-white border-b border-gray-200 py-2.5 pr-9 focus:outline-none focus:border-[#001f3f] text-[15px] transition-colors placeholder:text-gray-400 rounded-t-md"
             />
             {value ? (
                 <button
                     onClick={() => onChange('')}
                     aria-label="Clear search"
-                    className="absolute right-0 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-900 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-gray-600 hover:text-gray-900 rounded-md transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />

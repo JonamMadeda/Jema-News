@@ -1,6 +1,6 @@
 {
-    "name": "Jema News",
-    "short_name": "Jema News",
+    "name": "Jemanews",
+    "short_name": "Jemanews",
     "description": "Latest and relevant Kenyan news headlines.",
     "start_url": "/",
     "display": "standalone",
