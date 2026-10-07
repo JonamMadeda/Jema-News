@@ -31,14 +31,38 @@ export default function DailyDigest() {
     const [error, setError] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
 
-    async function load() {
+    async function load(force = false) {
         setLoading(true);
         setError(null);
+        // Client cache (survives reloads + server cold starts) mirrors the 3h server TTL
+        if (!force) {
+            try {
+                const raw = localStorage.getItem('jema:digest');
+                if (raw) {
+                    const cached = JSON.parse(raw) as { data: DigestResponse; expiresAt: number };
+                    if (cached.expiresAt > Date.now() && cached.data?.briefing) {
+                        setData({ ...cached.data, cached: true });
+                        setLoading(false);
+                        return;
+                    }
+                }
+            } catch {
+                // ignore corrupt cache
+            }
+        }
         try {
             const res = await fetch('/api/digest');
             const json = await res.json();
             if (!res.ok) throw new Error(json?.error || 'Failed to load digest');
             setData(json);
+            try {
+                localStorage.setItem(
+                    'jema:digest',
+                    JSON.stringify({ data: json, expiresAt: Date.now() + 3 * 60 * 60 * 1000 })
+                );
+            } catch {
+                // storage unavailable — non-fatal
+            }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Something went wrong');
         } finally {
@@ -48,7 +72,7 @@ export default function DailyDigest() {
 
     useEffect(() => {
         load();
-        const onRefresh = () => load();
+        const onRefresh = () => load(true);
         window.addEventListener('jema:digest-refresh', onRefresh);
         return () => window.removeEventListener('jema:digest-refresh', onRefresh);
     }, []);
@@ -95,7 +119,7 @@ export default function DailyDigest() {
                 <p className="text-sm text-gray-600 mb-3">{error}. You can still browse the latest headlines.</p>
                 <div className="flex gap-2 flex-wrap">
                     <button
-                        onClick={load}
+                        onClick={() => load(true)}
                         className="min-h-[32px] text-[11px] font-bold uppercase tracking-wide px-4 py-1.5 bg-[#001f3f] text-white rounded-md hover:bg-[#003366] transition-colors whitespace-nowrap active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2"
                     >
                         Retry
@@ -132,7 +156,7 @@ export default function DailyDigest() {
                         <p className="text-[12px] text-white/60 truncate">Generated {timeAgo(data.generatedAt)}</p>
                     </div>
                     <button
-                        onClick={load}
+                        onClick={() => load(true)}
                         aria-label="Regenerate brief"
                         title="Regenerate"
                         className="w-8 h-8 shrink-0 inline-flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"

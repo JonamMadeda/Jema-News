@@ -8,14 +8,16 @@ import CategoryFilter from './CategoryFilter';
 import NewsDetail from './NewsDetail';
 import DailyDigest from './DailyDigest';
 import LoadingMessage from './LoadingMessage';
+import { loadBookmarks, loadHistory, recordHistory, toggleBookmark } from '@/lib/storage';
 import { TAB_EVENT, REFRESH_EVENT, getInitialTab, setAppTab } from './Navbar';
 
-type Tab = 'latest' | 'brief' | 'trending';
+type Tab = 'latest' | 'brief' | 'trending' | 'saved';
 
 const TABS: { id: Tab; label: string }[] = [
     { id: 'brief', label: 'Daily Brief' },
     { id: 'latest', label: 'Latest News' },
     { id: 'trending', label: 'Trending' },
+    { id: 'saved', label: 'Saved' },
 ];
 
 function getPageNumbers(current: number, total: number): (number | '…')[] {
@@ -25,12 +27,38 @@ function getPageNumbers(current: number, total: number): (number | '…')[] {
     return [1, '…', current - 1, current, current + 1, '…', total];
 }
 
+function TrendingRows({ items, onSelect }: { items: NewsItem[]; onSelect: (item: NewsItem) => void }) {
+    return (
+        <div className="space-y-3">
+            {items.map((t, i) => (
+                <button
+                    key={`${t.id}-${i}`}
+                    onClick={() => onSelect(t)}
+                    className="w-full text-left flex gap-3 group hover:bg-gray-50 rounded-md p-1 -m-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
+                >
+                    <span className="text-lg font-bold text-gray-200 group-hover:text-[#001f3f] leading-none shrink-0 w-6 transition-colors">
+                        {i + 1}
+                    </span>
+                    <span className="min-w-0">
+                        <span className="block text-sm font-medium text-gray-900 leading-snug line-clamp-2 group-hover:text-[#001f3f]">
+                            {t.title}
+                        </span>
+                        <span className="block mt-1 text-[11px] text-gray-600 uppercase tracking-wide truncate">
+                            {t.source} • {t.category}
+                        </span>
+                    </span>
+                </button>
+            ))}
+        </div>
+    );
+}
+
 function readParams() {
     if (typeof window === 'undefined') return { tab: 'brief' as Tab, cat: 'All', q: '', page: 1, story: '' };
     const s = new URLSearchParams(window.location.search);
     const t = s.get('tab');
     return {
-        tab: (t === 'latest' || t === 'trending' ? t : 'brief') as Tab,
+        tab: (t === 'latest' || t === 'trending' || t === 'saved' ? t : 'brief') as Tab,
         cat: s.get('cat') || 'All',
         q: s.get('q') || '',
         page: Math.max(1, parseInt(s.get('page') || '1', 10) || 1),
@@ -74,10 +102,12 @@ export default function NewsList() {
     const [currentPage, setCurrentPage] = useState(initial.current.page);
     const [selectedItem, setSelectedItem] = useState<NewsItem | null>(null);
     const [toast, setToast] = useState<string | null>(null);
+    const [bookmarkIds, setBookmarkIds] = useState<string[]>(() => loadBookmarks());
+    const [historyIds, setHistoryIds] = useState<string[]>(() => loadHistory());
     const listTopRef = useRef<HTMLDivElement>(null);
     const savedScroll = useRef(0);
     const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const ITEMS_PER_PAGE = 7;
+    const ITEMS_PER_PAGE = 6;
 
     function showToast(msg: string) {
         setToast(msg);
@@ -190,6 +220,16 @@ export default function NewsList() {
         return counts;
     }, [news]);
 
+    const byId = useMemo(() => new Map(news.map((n) => [n.id, n])), [news]);
+    const savedItems = useMemo(
+        () => bookmarkIds.map((id) => byId.get(id)).filter((n): n is NewsItem => Boolean(n)),
+        [bookmarkIds, byId]
+    );
+    const recentItems = useMemo(
+        () => historyIds.map((id) => byId.get(id)).filter((n): n is NewsItem => Boolean(n)).slice(0, 10),
+        [historyIds, byId]
+    );
+
     const totalPages = Math.ceil(filteredNews.length / ITEMS_PER_PAGE);
     const safePage = Math.min(currentPage, Math.max(1, totalPages));
     const startIndex = (safePage - 1) * ITEMS_PER_PAGE;
@@ -210,8 +250,14 @@ export default function NewsList() {
     function handleTabListKey(e: React.KeyboardEvent) {
         if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
         e.preventDefault();
-        const i = TABS.findIndex((t) => t.id === activeTab);
-        const next = e.key === 'ArrowRight' ? TABS[(i + 1) % TABS.length] : TABS[(i + TABS.length - 1) % TABS.length];
+        // Trending tab is mobile-only — skip it in the cycle on desktop
+        const visible =
+            typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches
+                ? TABS.filter((t) => t.id !== 'trending')
+                : TABS;
+        const i = visible.findIndex((t) => t.id === activeTab);
+        const at = i === -1 ? 0 : i;
+        const next = e.key === 'ArrowRight' ? visible[(at + 1) % visible.length] : visible[(at + visible.length - 1) % visible.length];
         handleTabChange(next.id);
     }
 
@@ -223,8 +269,16 @@ export default function NewsList() {
     function handleSelect(item: NewsItem) {
         savedScroll.current = window.scrollY;
         setSelectedItem(item);
+        recordHistory(item.id);
+        setHistoryIds(loadHistory());
         writeParams({ story: item.id }, false);
         window.scrollTo(0, 0);
+    }
+
+    function handleToggleBookmark(item: NewsItem) {
+        const { saved, ids } = toggleBookmark(item.id);
+        setBookmarkIds(ids);
+        showToast(saved ? 'Saved to your list' : 'Removed from saved');
     }
 
     function handleBack() {
@@ -234,7 +288,14 @@ export default function NewsList() {
     }
 
     if (selectedItem) {
-        return <NewsDetail item={selectedItem} onBack={handleBack} />;
+        return (
+            <NewsDetail
+                item={selectedItem}
+                onBack={handleBack}
+                saved={bookmarkIds.includes(selectedItem.id)}
+                onToggleSave={() => handleToggleBookmark(selectedItem)}
+            />
+        );
     }
 
     if (loading) {
@@ -306,15 +367,20 @@ export default function NewsList() {
                     {toast}
                 </div>
             )}
-            <p className="md:hidden mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                {formattedDate}
-            </p>
+            <div className="md:hidden mb-1.5 flex items-center justify-between gap-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                    {formattedDate}
+                </p>
+                <span className="bg-gray-100 px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide text-gray-600 whitespace-nowrap">
+                    {filteredNews.length} • Live
+                </span>
+            </div>
             <div className="flex items-center justify-between gap-2 mb-3 border-b border-gray-100 pb-2">
                 <div
                     role="tablist"
                     aria-label="Switch between brief, latest and trending"
                     onKeyDown={handleTabListKey}
-                    className="inline-flex w-auto max-w-full overflow-x-auto bg-white border border-gray-200 p-0.5 rounded-md gap-0.5"
+                    className="flex w-full sm:inline-flex sm:w-auto bg-white border border-gray-200 p-0.5 rounded-md gap-0.5"
                 >
                     {TABS.map((t) => (
                         <button
@@ -323,7 +389,7 @@ export default function NewsList() {
                             aria-selected={activeTab === t.id}
                             tabIndex={activeTab === t.id ? 0 : -1}
                             onClick={() => handleTabChange(t.id)}
-                            className={`min-h-[32px] rounded-md px-3 sm:px-4 text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2 active:scale-[0.98] ${activeTab === t.id
+                            className={`min-h-[32px] rounded-md px-2 sm:px-4 text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2 active:scale-[0.98] ${t.id === 'trending' ? 'lg:hidden ' : ''}flex-1 sm:flex-none ${activeTab === t.id
                                 ? 'bg-[#001f3f] text-white shadow-md shadow-blue-900/20'
                                 : 'text-gray-600 hover:text-gray-900'
                                 }`}
@@ -332,7 +398,7 @@ export default function NewsList() {
                         </button>
                     ))}
                 </div>
-                <div className="flex items-center gap-2 shrink-0 min-w-0">
+                <div className="hidden md:flex items-center gap-2 shrink-0 min-w-0">
                     <span className="hidden md:block text-[11px] font-bold uppercase tracking-wide text-gray-900 truncate">
                         {formattedDate}
                     </span>
@@ -345,33 +411,20 @@ export default function NewsList() {
             {activeTab === 'brief' ? (
                 <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
                     <DailyDigest />
-                    <aside className="space-y-4 lg:sticky lg:top-20">
+                    <aside className="hidden lg:block lg:sticky lg:top-20">
                         <div className="bg-white border border-gray-200 rounded-md p-3">
                             <h3 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mb-3">
-                                Keep exploring
+                                Trending now
                             </h3>
-                            <div className="space-y-2">
-                                <button
-                                    onClick={() => handleTabChange('latest')}
-                                    className="w-full min-h-[32px] text-[11px] font-bold uppercase tracking-wide text-[#001f3f] border border-gray-200 rounded-md hover:border-[#001f3f] hover:bg-gray-50 transition-colors whitespace-nowrap active:scale-[0.99]"
-                                >
-                                    View all news →
-                                </button>
-                                <button
-                                    onClick={() => handleTabChange('trending')}
-                                    className="w-full min-h-[32px] text-[11px] font-bold uppercase tracking-wide text-[#001f3f] border border-gray-200 rounded-md hover:border-[#001f3f] hover:bg-gray-50 transition-colors whitespace-nowrap active:scale-[0.99]"
-                                >
-                                    See trending →
-                                </button>
-                            </div>
+                            <TrendingRows items={trending} onSelect={handleSelect} />
                         </div>
                     </aside>
                 </div>
             ) : activeTab === 'latest' ? (
                 <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
                     <div className="min-w-0">
-                        <div className="bg-white border border-gray-200 rounded-md px-3 pt-2 pb-3">
-                            <div className="md:sticky md:top-12 z-30 bg-white/95 md:backdrop-blur-sm -mx-1 px-1 pt-1 pb-2 border-b border-gray-100">
+                        <div className="bg-white border border-gray-200 rounded-md px-4 pt-3 pb-4">
+                            <div className="md:sticky md:top-12 z-30 bg-white/95 md:backdrop-blur-sm -mx-2 px-2 pt-2 pb-3 border-b border-gray-100">
                                 <SearchBar value={searchQuery} onChange={(v) => { setSearchQuery(v); setCurrentPage(1); }} />
                                 <CategoryFilter
                                     activeCategory={activeCategory}
@@ -407,19 +460,18 @@ export default function NewsList() {
                                                     if (e.key === 'Enter') handleSelect(heroItem);
                                                 }}
                                                 tabIndex={0}
-                                                className="group cursor-pointer mb-2 rounded-md border-l-2 border-[#001f3f] bg-gray-50 pl-4 pr-3 py-3 hover:bg-gray-100/70 transition-colors active:scale-[0.995] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
+                                                className="group cursor-pointer mb-4 rounded-r-md rounded-l-none border border-gray-200 border-l-[3px] border-l-[#001f3f] bg-white pl-4 pr-4 py-4 hover:border-gray-300 hover:shadow-sm transition-all active:scale-[0.995] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
                                             >
-                                                <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide text-gray-600 mb-1.5">
-                                                    <span className="text-[#001f3f]">Top story</span>
+                                                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wide mb-2">
+                                                    <span className="bg-[#001f3f] text-white px-2 py-0.5 rounded-md">Top story</span>
+                                                    <span className="text-gray-600">{heroItem.category}</span>
                                                     <span aria-hidden="true" className="text-gray-300">•</span>
-                                                    <span>{heroItem.category}</span>
-                                                    <span aria-hidden="true" className="text-gray-300">•</span>
-                                                    <span className="truncate">{heroItem.source}</span>
+                                                    <span className="text-gray-600 truncate">{heroItem.source}</span>
                                                 </div>
-                                                <h3 className="text-[17px] md:text-xl font-bold text-gray-900 group-hover:text-[#001f3f] leading-tight">
+                                                <h3 className="text-lg md:text-[22px] font-bold text-gray-900 group-hover:text-[#001f3f] leading-tight tracking-tight">
                                                     {heroItem.title}
                                                 </h3>
-                                                <p className="mt-1.5 text-sm text-gray-600 line-clamp-2">
+                                                <p className="mt-2 text-sm md:text-[15px] text-gray-600 leading-relaxed line-clamp-2">
                                                     {heroItem.contentSnippet}
                                                 </p>
                                             </article>
@@ -430,6 +482,8 @@ export default function NewsList() {
                                                     key={`${item.id}-${idx}`}
                                                     item={item}
                                                     onSelect={handleSelect}
+                                                    saved={bookmarkIds.includes(item.id)}
+                                                    onToggleSave={() => handleToggleBookmark(item)}
                                                 />
                                             ))}
                                         </div>
@@ -514,15 +568,21 @@ export default function NewsList() {
                                 </button>
                                 <button
                                     onClick={() => handleTabChange('trending')}
-                                    className="w-full min-h-[32px] text-[11px] font-bold uppercase tracking-wide border border-gray-200 text-[#001f3f] rounded-md hover:border-[#001f3f] hover:bg-gray-50 transition-colors whitespace-nowrap active:scale-[0.99]"
+                                    className="lg:hidden w-full min-h-[32px] text-[11px] font-bold uppercase tracking-wide border border-gray-200 text-[#001f3f] rounded-md hover:border-[#001f3f] hover:bg-gray-50 transition-colors whitespace-nowrap active:scale-[0.99]"
                                 >
                                     See trending →
                                 </button>
                             </div>
                         </div>
+                        <div className="hidden lg:block bg-white border border-gray-200 rounded-md p-3">
+                            <h3 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mb-3">
+                                Trending now
+                            </h3>
+                            <TrendingRows items={trending} onSelect={handleSelect} />
+                        </div>
                     </aside>
                 </div>
-            ) : (
+            ) : activeTab === 'trending' ? (
                 <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
                     <div className="bg-white border border-gray-200 rounded-md p-3 min-w-0">
                         <h2 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mb-2 px-1">
@@ -540,7 +600,7 @@ export default function NewsList() {
                                             {i + 1}
                                         </span>
                                         <span className="min-w-0 flex-1">
-                                            <span className="block text-[15px] font-bold text-gray-900 leading-snug line-clamp-2 group-hover:text-[#001f3f]">
+                                            <span className="block text-[15px] font-medium text-gray-900 leading-snug line-clamp-2 group-hover:text-[#001f3f]">
                                                 {t.title}
                                             </span>
                                             <span className="block mt-1 text-[11px] text-gray-600 uppercase tracking-wide truncate">
@@ -555,6 +615,71 @@ export default function NewsList() {
                                 No trending stories yet.
                             </p>
                         )}
+                    </div>
+                    <aside className="space-y-4 lg:sticky lg:top-20">
+                        <div className="bg-white border border-gray-200 rounded-md p-3">
+                            <h3 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mb-1">
+                                Start with the brief
+                            </h3>
+                            <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
+                                2-minute AI catch-up across {news.length} stories.
+                            </p>
+                            <button
+                                onClick={() => handleTabChange('brief')}
+                                className="w-full min-h-[32px] text-[11px] font-bold uppercase tracking-wide border border-gray-200 text-[#001f3f] rounded-md hover:border-[#001f3f] hover:bg-gray-50 transition-colors whitespace-nowrap active:scale-[0.99]"
+                            >
+                                Read Daily Brief →
+                            </button>
+                        </div>
+                    </aside>
+                </div>
+            ) : (
+                <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
+                    <div className="min-w-0 space-y-4">
+                        <div className="bg-white border border-gray-200 rounded-md p-3">
+                            <h2 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mb-2 px-1">
+                                Bookmarked ({savedItems.length})
+                            </h2>
+                            {savedItems.length > 0 ? (
+                                <div className="divide-y divide-gray-100">
+                                    {savedItems.map((item) => (
+                                        <NewsCard
+                                            key={item.id}
+                                            item={item}
+                                            onSelect={handleSelect}
+                                            saved
+                                            onToggleSave={() => handleToggleBookmark(item)}
+                                        />
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="py-6 text-center text-sm text-gray-600">
+                                    Nothing saved yet. Tap the bookmark on any story to keep it here.
+                                </p>
+                            )}
+                        </div>
+                        <div className="bg-white border border-gray-200 rounded-md p-3">
+                            <h2 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mb-2 px-1">
+                                Recently read
+                            </h2>
+                            {recentItems.length > 0 ? (
+                                <div className="divide-y divide-gray-100">
+                                    {recentItems.map((item) => (
+                                        <NewsCard
+                                            key={item.id}
+                                            item={item}
+                                            onSelect={handleSelect}
+                                            saved={bookmarkIds.includes(item.id)}
+                                            onToggleSave={() => handleToggleBookmark(item)}
+                                        />
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="py-6 text-center text-sm text-gray-600">
+                                    Stories you open will appear here.
+                                </p>
+                            )}
+                        </div>
                     </div>
                     <aside className="space-y-4 lg:sticky lg:top-20">
                         <div className="bg-white border border-gray-200 rounded-md p-3">

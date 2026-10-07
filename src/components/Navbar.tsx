@@ -5,7 +5,7 @@ import { Public_Sans } from 'next/font/google';
 
 const brand = Public_Sans({ subsets: ['latin'], weight: ['700', '800'] });
 
-type Tab = 'latest' | 'brief' | 'trending';
+type Tab = 'latest' | 'brief' | 'trending' | 'saved';
 
 export const TAB_EVENT = 'jema:tab';
 export const REFRESH_EVENT = 'jema:refresh';
@@ -13,7 +13,7 @@ export const REFRESH_EVENT = 'jema:refresh';
 export function getInitialTab(): Tab {
     if (typeof window === 'undefined') return 'brief';
     const t = new URLSearchParams(window.location.search).get('tab');
-    return t === 'latest' || t === 'trending' ? t : 'brief';
+    return t === 'latest' || t === 'trending' || t === 'saved' ? t : 'brief';
 }
 
 export function setAppTab(tab: Tab) {

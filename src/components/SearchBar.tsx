@@ -7,7 +7,7 @@ type SearchBarProps = {
 
 export default function SearchBar({ value, onChange }: SearchBarProps) {
     return (
-        <div className="relative mb-2">
+        <div className="relative mb-3">
             <input
                 id="news-search"
                 type="text"

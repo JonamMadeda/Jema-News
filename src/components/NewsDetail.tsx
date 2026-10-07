@@ -8,9 +8,11 @@ import { NewsItem } from '@/lib/rss';
 type NewsDetailProps = {
     item: NewsItem;
     onBack: () => void;
+    saved?: boolean;
+    onToggleSave?: () => void;
 };
 
-export default function NewsDetail({ item, onBack }: NewsDetailProps) {
+export default function NewsDetail({ item, onBack, saved = false, onToggleSave }: NewsDetailProps) {
     const [summary, setSummary] = useState<string | null>(null);
     const [summarizing, setSummarizing] = useState(false);
     const [sumError, setSumError] = useState<string | null>(null);
@@ -50,9 +52,7 @@ export default function NewsDetail({ item, onBack }: NewsDetailProps) {
 
     async function handleCopyLink() {
         try {
-            const url = new URL(window.location.href);
-            url.searchParams.set('story', item.id);
-            await navigator.clipboard.writeText(url.toString());
+            await navigator.clipboard.writeText(`${window.location.origin}/story/${item.id}`);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch {
@@ -60,8 +60,9 @@ export default function NewsDetail({ item, onBack }: NewsDetailProps) {
         }
     }
 
-    const waHref = `https://wa.me/?text=${encodeURIComponent(item.title + ' — Jemanews')}`;
-    const xHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(item.title + ' — Jemanews')}`;
+    const storyUrl = typeof window !== 'undefined' ? `${window.location.origin}/story/${item.id}` : `/story/${item.id}`;
+    const waHref = `https://wa.me/?text=${encodeURIComponent(item.title + ' — Jemanews ' + storyUrl)}`;
+    const xHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(item.title + ' — Jemanews')}&url=${encodeURIComponent(storyUrl)}`;
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -76,6 +77,18 @@ export default function NewsDetail({ item, onBack }: NewsDetailProps) {
                     Back
                 </button>
                 <div className="flex items-center gap-1.5">
+                    {onToggleSave && (
+                        <button
+                            onClick={onToggleSave}
+                            aria-pressed={saved}
+                            className={`min-h-[32px] inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide px-3 border rounded-md transition-colors whitespace-nowrap active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] ${saved ? 'border-[#001f3f] text-[#001f3f] bg-gray-50' : 'border-gray-200 text-gray-600 hover:text-[#001f3f] hover:border-[#001f3f]'}`}
+                        >
+                            <svg className="w-3.5 h-3.5" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                            </svg>
+                            {saved ? 'Saved' : 'Save'}
+                        </button>
+                    )}
                     <button
                         onClick={handleCopyLink}
                         className="min-h-[32px] text-[11px] font-bold uppercase tracking-wide px-3 text-gray-600 hover:text-[#001f3f] border border-gray-200 hover:border-[#001f3f] rounded-md transition-colors whitespace-nowrap active:scale-[0.98]"

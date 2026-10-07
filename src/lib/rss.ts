@@ -16,6 +16,9 @@ const FEEDS = [
     // General/Kenya
     { name: 'The Standard', category: 'General', url: 'https://www.standardmedia.co.ke/rss/kenya.php' },
     { name: 'Capital News', category: 'General', url: 'https://www.capitalfm.co.ke/news/feed/' },
+    { name: 'Citizen Digital', category: 'General', url: 'https://www.citizen.digital/feed.xml' },
+    { name: 'Tuko', category: 'General', url: 'https://www.tuko.co.ke/rss/all.rss' },
+    { name: 'KBC', category: 'General', url: 'https://www.kbc.co.ke/feed/' },
 
     // Politics
     { name: 'The Standard', category: 'Politics', url: 'https://www.standardmedia.co.ke/rss/politics.php' },
@@ -40,7 +43,8 @@ export async function fetchNews(): Promise<NewsItem[]> {
             const parsedFeed = await parser.parseURL(feed.url);
             const items = parsedFeed.items.map((item) => {
                 const link = item.link || '#';
-                const id = Buffer.from(link).toString('base64').substring(0, 16);
+                // Full base64url id — reversible so /story/[id] can resolve the link
+                const id = Buffer.from(link).toString('base64url');
 
                 return {
                     id,
