@@ -1,21 +1,9 @@
 import { fetchNews } from '@/lib/rss';
 import { NextResponse } from 'next/server';
 import { completeWithFallback } from '@/lib/ai';
+import { getDigest, setDigest, CachedDigest } from '@/lib/digestCache';
 
 export const dynamic = 'force-dynamic';
-
-const CACHE_TTL_MS = 3 * 60 * 60 * 1000; // 3 hours
-
-type CachedDigest = {
-    briefing: string;
-    headlineCount: number;
-    generatedAt: string;
-    model: string;
-    sources: string[];
-};
-
-// In-memory cache (per server instance) to avoid burning credits
-let cache: { data: CachedDigest; expiresAt: number } | null = null;
 
 export async function GET() {
     const apiKey = process.env.OPENROUTER_API_KEY;
@@ -27,8 +15,9 @@ export async function GET() {
         );
     }
 
-    if (cache && Date.now() < cache.expiresAt) {
-        return NextResponse.json({ ...cache.data, cached: true });
+    const hit = await getDigest();
+    if (hit) {
+        return NextResponse.json({ ...hit.data, cached: true });
     }
 
     try {
@@ -66,7 +55,7 @@ export async function GET() {
             sources: [...new Set(top.map((t) => t.source))].slice(0, 6),
         };
 
-        cache = { data, expiresAt: Date.now() + CACHE_TTL_MS };
+        await setDigest(data);
 
         return NextResponse.json({ ...data, cached: false });
     } catch (error) {

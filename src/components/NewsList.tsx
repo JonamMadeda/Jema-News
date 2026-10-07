@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NewsItem } from '@/lib/rss';
 import NewsCard from './NewsCard';
 import SearchBar from './SearchBar';
@@ -93,11 +93,18 @@ function writeParams(patch: Partial<{ tab: Tab; cat: string; q: string; page: nu
 export default function NewsList() {
     const initial = useRef(readParams());
     const [activeTab, setActiveTab] = useState<Tab>(initial.current.tab);
-    const [news, setNews] = useState<NewsItem[]>([]);
-    const [filteredNews, setFilteredNews] = useState<NewsItem[]>([]);
+    const [items, setItems] = useState<NewsItem[]>([]);
+    const [total, setTotal] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
+    const [counts, setCounts] = useState<Record<string, number>>({ All: 0 });
+    const [trending, setTrending] = useState<NewsItem[]>([]);
+    const [savedItems, setSavedItems] = useState<NewsItem[]>([]);
+    const [recentItems, setRecentItems] = useState<NewsItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [pageLoading, setPageLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState(initial.current.q);
+    const [debouncedQuery, setDebouncedQuery] = useState(initial.current.q);
     const [activeCategory, setActiveCategory] = useState(initial.current.cat);
     const [currentPage, setCurrentPage] = useState(initial.current.page);
     const [selectedItem, setSelectedItem] = useState<NewsItem | null>(null);
@@ -107,7 +114,9 @@ export default function NewsList() {
     const listTopRef = useRef<HTMLDivElement>(null);
     const savedScroll = useRef(0);
     const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const ITEMS_PER_PAGE = 6;
+    const abortRef = useRef<AbortController | null>(null);
+    const pageCache = useRef(new Map<string, Awaited<ReturnType<typeof fetchPage>>>());
+    const LIMIT = 6;
 
     function showToast(msg: string) {
         setToast(msg);
@@ -115,19 +124,107 @@ export default function NewsList() {
         toastTimer.current = setTimeout(() => setToast(null), 2500);
     }
 
-    async function loadNews(silent = false) {
-        if (!silent) setLoading(true);
-        setError(null);
-        try {
-            const response = await fetch('/api/news');
-            if (!response.ok) throw new Error('Failed to fetch news');
-            const data = await response.json();
-            setNews(data);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Something went wrong');
-        } finally {
-            setLoading(false);
+    function pageKey(page: number, cat: string, q: string) {
+        return `${page}|${cat}|${q.trim().toLowerCase()}`;
+    }
+
+    async function fetchPage(page: number, cat: string, q: string, signal?: AbortSignal) {
+        const params = new URLSearchParams({
+            page: String(page),
+            limit: String(LIMIT),
+            category: cat,
+            q: q.trim(),
+        });
+        const response = await fetch(`/api/news?${params.toString()}`, { signal });
+        if (!response.ok) throw new Error('Failed to fetch news');
+        return response.json() as Promise<{
+            items: NewsItem[];
+            total: number;
+            page: number;
+            totalPages: number;
+            counts: Record<string, number>;
+        }>;
+    }
+
+    // Load one server page (cache-first) + prefetch the next page in background
+    async function loadPage(page: number, cat: string, q: string) {
+        const key = pageKey(page, cat, q);
+        const hit = pageCache.current.get(key);
+        if (hit) {
+            setItems(hit.items);
+            setTotal(hit.total);
+            setTotalPages(hit.totalPages);
+            setCounts(hit.counts);
+            if (hit.page !== page) setCurrentPage(hit.page);
+        } else {
+            abortRef.current?.abort();
+            const ctrl = new AbortController();
+            abortRef.current = ctrl;
+            const firstLoad = items.length === 0;
+            if (firstLoad) setLoading(true);
+            else setPageLoading(true);
+            setError(null);
+            try {
+                const data = await fetchPage(page, cat, q, ctrl.signal);
+                pageCache.current.set(key, data);
+                setItems(data.items);
+                setTotal(data.total);
+                setTotalPages(data.totalPages);
+                setCounts(data.counts);
+                if (data.page !== page) setCurrentPage(data.page);
+            } catch (err) {
+                if (err instanceof DOMException && err.name === 'AbortError') return;
+                setError(err instanceof Error ? err.message : 'Something went wrong');
+            } finally {
+                setLoading(false);
+                setPageLoading(false);
+            }
         }
+        // Prefetch next page so Next feels instant
+        if (page < totalPagesRef.current) {
+            const nextKey = pageKey(page + 1, cat, q);
+            if (!pageCache.current.has(nextKey)) {
+                fetchPage(page + 1, cat, q)
+                    .then((data) => pageCache.current.set(nextKey, data))
+                    .catch(() => {});
+            }
+        }
+    }
+    const totalPagesRef = useRef(1);
+    totalPagesRef.current = totalPages;
+
+    async function loadTrending() {
+        try {
+            const params = new URLSearchParams({ page: '1', limit: '8', category: 'All', q: '' });
+            const response = await fetch(`/api/news?${params.toString()}`);
+            if (!response.ok) return;
+            const data = await response.json();
+            setTrending(data.items);
+        } catch {
+            // trending is optional — feed works without it
+        }
+    }
+
+    async function loadByIds(ids: string[]): Promise<NewsItem[]> {
+        if (ids.length === 0) return [];
+        try {
+            const params = new URLSearchParams({ ids: ids.slice(0, 60).join(',') });
+            const response = await fetch(`/api/news?${params.toString()}`);
+            if (!response.ok) return [];
+            const data = await response.json();
+            return data.items;
+        } catch {
+            return [];
+        }
+    }
+
+    async function loadSavedLists(bIds: string[], hIds: string[]) {
+        const [saved, recent] = await Promise.all([
+            loadByIds(bIds),
+            loadByIds(hIds.slice(0, 10)),
+        ]);
+        setSavedItems(saved);
+        setRecentItems(recent);
     }
 
     useEffect(() => {
@@ -142,13 +239,27 @@ export default function NewsList() {
             if (!p.story) setSelectedItem(null);
         };
         const onRefresh = () => {
-            loadNews(true).then(() => showToast('Updated just now'));
+            pageCache.current.clear();
+            loadPage(currentPageRef.current, activeCategoryRef.current, debouncedQueryRef.current)
+                .then(() => showToast('Updated just now'));
+            loadTrending();
             window.dispatchEvent(new CustomEvent('jema:digest-refresh'));
         };
         window.addEventListener(TAB_EVENT, onTab);
         window.addEventListener('popstate', onPop);
         window.addEventListener(REFRESH_EVENT, onRefresh);
-        loadNews();
+        loadPage(initial.current.page, initial.current.cat, initial.current.q);
+        loadTrending();
+        // Deep-linked story (?story=) resolves via a tiny ids lookup
+        const storyId = initial.current.story;
+        if (storyId) {
+            loadByIds([storyId]).then(([found]) => {
+                if (found) {
+                    savedScroll.current = window.scrollY;
+                    setSelectedItem(found);
+                }
+            });
+        }
         return () => {
             window.removeEventListener(TAB_EVENT, onTab);
             window.removeEventListener('popstate', onPop);
@@ -157,18 +268,13 @@ export default function NewsList() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Open deep-linked story once news arrives
-    useEffect(() => {
-        const storyId = readParams().story;
-        if (storyId && news.length > 0 && !selectedItem) {
-            const found = news.find((n) => n.id === storyId);
-            if (found) {
-                savedScroll.current = window.scrollY;
-                setSelectedItem(found);
-            }
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [news]);
+    // Refs so the refresh handler always sees current values
+    const currentPageRef = useRef(currentPage);
+    currentPageRef.current = currentPage;
+    const activeCategoryRef = useRef(activeCategory);
+    activeCategoryRef.current = activeCategory;
+    const debouncedQueryRef = useRef(debouncedQuery);
+    debouncedQueryRef.current = debouncedQuery;
 
     // Keyboard: '/' focuses search, Esc clears
     useEffect(() => {
@@ -188,54 +294,32 @@ export default function NewsList() {
         return () => window.removeEventListener('keydown', onKey);
     }, []);
 
+    // Debounce search so typing doesn't fire a request per keystroke
     useEffect(() => {
-        let result = [...news];
+        const id = setTimeout(() => setDebouncedQuery(searchQuery), 300);
+        return () => clearTimeout(id);
+    }, [searchQuery]);
 
-        if (activeCategory !== 'All') {
-            result = result.filter(item => item.category === activeCategory);
-        }
+    // Server-driven pages: reload whenever page / category / debounced query changes
+    useEffect(() => {
+        loadPage(currentPage, activeCategory, debouncedQuery);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentPage, activeCategory, debouncedQuery]);
 
-        if (searchQuery.trim()) {
-            const query = searchQuery.toLowerCase();
-            result = result.filter(
-                item =>
-                    item.title.toLowerCase().includes(query) ||
-                    item.contentSnippet.toLowerCase().includes(query)
-            );
-        }
-
-        setFilteredNews(result);
-    }, [searchQuery, activeCategory, news]);
+    // Saved + history resolve through the tiny ids lookup
+    useEffect(() => {
+        if (activeTab === 'saved') loadSavedLists(bookmarkIds, historyIds);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab, bookmarkIds, historyIds]);
 
     // Sync filter/page/tab to URL (debounced for query via replaceState)
     useEffect(() => {
         writeParams({ tab: activeTab, cat: activeCategory, q: searchQuery, page: currentPage });
     }, [activeTab, activeCategory, searchQuery, currentPage]);
 
-    const categoryCounts = useMemo(() => {
-        const counts: Record<string, number> = { All: news.length };
-        for (const n of news) {
-            counts[n.category] = (counts[n.category] || 0) + 1;
-        }
-        return counts;
-    }, [news]);
-
-    const byId = useMemo(() => new Map(news.map((n) => [n.id, n])), [news]);
-    const savedItems = useMemo(
-        () => bookmarkIds.map((id) => byId.get(id)).filter((n): n is NewsItem => Boolean(n)),
-        [bookmarkIds, byId]
-    );
-    const recentItems = useMemo(
-        () => historyIds.map((id) => byId.get(id)).filter((n): n is NewsItem => Boolean(n)).slice(0, 10),
-        [historyIds, byId]
-    );
-
-    const totalPages = Math.ceil(filteredNews.length / ITEMS_PER_PAGE);
+    const paginatedNews = items;
     const safePage = Math.min(currentPage, Math.max(1, totalPages));
-    const startIndex = (safePage - 1) * ITEMS_PER_PAGE;
-    const paginatedNews = filteredNews.slice(startIndex, startIndex + ITEMS_PER_PAGE);
     const isFiltering = searchQuery.trim() !== '' || activeCategory !== 'All';
-    const trending = news.slice(0, 8);
     const showHero = !isFiltering && safePage === 1 && paginatedNews.length > 0;
     const heroItem = showHero ? paginatedNews[0] : null;
     const restItems = showHero ? paginatedNews.slice(1) : paginatedNews;
@@ -344,7 +428,10 @@ export default function NewsList() {
                 <div className="text-gray-600">
                     <p className="text-[13px] uppercase tracking-wide font-semibold mb-4">{error}</p>
                     <button
-                        onClick={() => loadNews()}
+                        onClick={() => {
+                            pageCache.current.clear();
+                            loadPage(currentPage, activeCategory, debouncedQuery);
+                        }}
                         className="min-h-[32px] text-[11px] font-bold uppercase tracking-wide px-4 py-1.5 bg-[#001f3f] text-white rounded-md hover:bg-[#003366] transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2"
                     >
                         Retry
@@ -372,7 +459,7 @@ export default function NewsList() {
                     {formattedDate}
                 </p>
                 <span className="bg-gray-100 px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide text-gray-600 whitespace-nowrap">
-                    {filteredNews.length} • Live
+                    {total} • Live
                 </span>
             </div>
             <div className="flex items-center justify-between gap-2 mb-3 border-b border-gray-100 pb-2">
@@ -403,7 +490,7 @@ export default function NewsList() {
                         {formattedDate}
                     </span>
                     <span className="bg-gray-100 px-2 py-0.5 rounded-md text-[11px] font-semibold uppercase tracking-wide text-gray-600 whitespace-nowrap">
-                        {filteredNews.length} • Live
+                        {total} • Live
                     </span>
                 </div>
             </div>
@@ -429,13 +516,13 @@ export default function NewsList() {
                                 <CategoryFilter
                                     activeCategory={activeCategory}
                                     onCategoryChange={(c) => { setActiveCategory(c); setCurrentPage(1); }}
-                                    counts={categoryCounts}
+                                    counts={counts}
                                 />
                             </div>
 
                             {isFiltering && (
                                 <p className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-gray-600" role="status">
-                                    {filteredNews.length} result{filteredNews.length === 1 ? '' : 's'}
+                                    {total} result{total === 1 ? '' : 's'}
                                     {searchQuery.trim() && <> for &ldquo;{searchQuery.trim()}&rdquo;</>}
                                     {activeCategory !== 'All' && <> in {activeCategory}</>}
                                     <button
@@ -451,6 +538,11 @@ export default function NewsList() {
                             )}
 
                             <div className="mt-2">
+                                {pageLoading && items.length > 0 && (
+                                    <div className="mb-2 rounded-md border border-gray-100 bg-gray-50 px-3 py-2">
+                                        <LoadingMessage stages={['Loading page…']} intervalMs={1200} />
+                                    </div>
+                                )}
                                 {paginatedNews.length > 0 ? (
                                     <>
                                         {heroItem && (
@@ -557,7 +649,7 @@ export default function NewsList() {
                                 Start with the brief
                             </h3>
                             <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
-                                2-minute AI catch-up across {news.length} stories.
+                                2-minute AI catch-up across {counts.All || total} stories.
                             </p>
                             <div className="space-y-2">
                                 <button
@@ -622,7 +714,7 @@ export default function NewsList() {
                                 Start with the brief
                             </h3>
                             <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
-                                2-minute AI catch-up across {news.length} stories.
+                                2-minute AI catch-up across {counts.All || total} stories.
                             </p>
                             <button
                                 onClick={() => handleTabChange('brief')}
@@ -687,7 +779,7 @@ export default function NewsList() {
                                 Start with the brief
                             </h3>
                             <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
-                                2-minute AI catch-up across {news.length} stories.
+                                2-minute AI catch-up across {counts.All || total} stories.
                             </p>
                             <button
                                 onClick={() => handleTabChange('brief')}
