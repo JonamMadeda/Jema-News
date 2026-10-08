@@ -1,0 +1,18 @@
+# Builds the fresh morning brief and pushes one notification to all
+# subscribers (07:00 Nairobi time). Run on demand via "Run workflow".
+# Future notification jobs (e.g. breaking-news checks) get their own
+# workflow file following this pattern.
+name: Daily brief push
+
+on:
+  schedule:
+    - cron: "5 4 * * *"
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Build brief and notify subscribers
+        run: curl -fsS --max-time 300 "${{ secrets.APP_URL }}/api/push/daily-brief?secret=${{ secrets.CRON_SECRET }}"

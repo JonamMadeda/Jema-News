@@ -1,0 +1,16 @@
+# Keeps the shared digest cache warm so briefs load instantly.
+# Runs every 3 hours + on demand via "Run workflow".
+name: Digest warmup
+
+on:
+  schedule:
+    - cron: "5 */3 * * *"
+  workflow_dispatch:
+
+jobs:
+  warm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Warm digest cache
+        run: curl -fsS --max-time 120 "${{ secrets.APP_URL }}/api/digest" -o /dev/null -w "HTTP %{http_code}\n"

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Public_Sans } from 'next/font/google';
+import SubscribeButton from './SubscribeButton';
 
 const brand = Public_Sans({ subsets: ['latin'], weight: ['700', '800'] });
 
@@ -52,9 +53,10 @@ export default function Navbar() {
                     </span>
                 </a>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1.5 shrink-0">
                     <span className="hidden md:block text-[11px] font-semibold text-gray-600 whitespace-nowrap">{today}</span>
                     <span className="hidden md:block w-px h-4 bg-gray-200"></span>
+                    <SubscribeButton />
                     <button
                         onClick={handleRefresh}
                         aria-label="Refresh news"

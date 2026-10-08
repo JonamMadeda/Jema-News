@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import Navbar from "@/components/Navbar";
+import SwRegister from "@/components/SwRegister";
 
 export const metadata: Metadata = {
   title: "Jemanews | Minimal Kenyan News",
@@ -37,6 +38,7 @@ export default function RootLayout({
         <meta name="google" content="notranslate" />
 
         <Navbar />
+        <SwRegister />
         <main className="min-h-screen bg-[#f4f5f7]">
           {children}
         </main>
