@@ -1,5 +1,5 @@
 import webpush from 'web-push';
-import { Redis } from '@upstash/redis';
+import { getRedis } from '@/lib/redis';
 
 export type PushSubscriptionJSON = {
     endpoint: string;
@@ -14,15 +14,8 @@ export type BriefPushPayload = {
 
 const SUBS_KEY = 'jema:push-subs';
 
-function redis(): Redis | null {
-    if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-        return null;
-    }
-    try {
-        return Redis.fromEnv();
-    } catch {
-        return null;
-    }
+function redis() {
+    return getRedis();
 }
 
 // Dev fallback when Redis isn't configured (per-process only)

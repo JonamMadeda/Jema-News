@@ -6,7 +6,8 @@
 // to process memory when the KV env vars aren't configured (local dev).
 // Accuracy is untouched — same prompt, same models, just served instantly.
 
-import { Redis } from '@upstash/redis';
+import { getRedis } from '@/lib/redis';
+import type { Redis } from '@upstash/redis';
 
 export type CachedDigest = {
     briefing: string;
@@ -19,21 +20,10 @@ export type CachedDigest = {
 const KEY = 'jema:digest';
 const TTL_SECONDS = 3 * 60 * 60; // 3 hours, mirrors the client cache
 
-function getClient(): Redis | null {
-    if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-        return null;
-    }
-    try {
-        return Redis.fromEnv();
-    } catch {
-        return null;
-    }
-}
-
 // Lazy singleton (avoids throwing at import time when env is absent)
 let client: Redis | null | undefined;
 function redis(): Redis | null {
-    if (client === undefined) client = getClient();
+    if (client === undefined) client = getRedis();
     return client;
 }
 
