@@ -3,6 +3,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import Navbar from "@/components/Navbar";
 import SwRegister from "@/components/SwRegister";
+import NotifyPrompt from "@/components/NotifyPrompt";
 
 export const metadata: Metadata = {
   title: "Jemanews | Minimal Kenyan News",
@@ -39,6 +40,7 @@ export default function RootLayout({
 
         <Navbar />
         <SwRegister />
+        <NotifyPrompt />
         <main className="min-h-screen bg-[#f4f5f7]">
           {children}
         </main>
