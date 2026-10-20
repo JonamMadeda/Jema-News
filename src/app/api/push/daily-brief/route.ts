@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { buildFreshDigest } from '@/lib/digest';
 import { setDigest } from '@/lib/digestCache';
-import { listSubscriptions, sendBriefPush } from '@/lib/push';
+import { sendBriefPush } from '@/lib/push';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 120;
@@ -9,13 +9,8 @@ export const maxDuration = 120;
 function authorized(req: Request): boolean {
     const secret = process.env.CRON_SECRET;
     if (!secret) return false;
-    const url = new URL(req.url);
-    // Vercel Cron sends `Authorization: Bearer <CRON_SECRET>` automatically
-    // when CRON_SECRET is set; ?secret= covers manual/GitHub Actions calls.
-    return (
-        req.headers.get('authorization') === `Bearer ${secret}` ||
-        url.searchParams.get('secret') === secret
-    );
+    // Header-only: ?secret= leaks in Vercel logs / browser history.
+    return req.headers.get('authorization') === `Bearer ${secret}`;
 }
 
 // Daily job (cron): build a fresh morning brief, cache it, and notify every

@@ -1,5 +1,5 @@
 import webpush from 'web-push';
-import { getRedis } from '@/lib/redis';
+import { getSharedRedis } from '@/lib/redis';
 
 export type PushSubscriptionJSON = {
     endpoint: string;
@@ -15,7 +15,7 @@ export type BriefPushPayload = {
 const SUBS_KEY = 'jema:push-subs';
 
 function redis() {
-    return getRedis();
+    return getSharedRedis();
 }
 
 // Dev fallback when Redis isn't configured (per-process only)
@@ -44,7 +44,16 @@ export async function listSubscriptions(): Promise<PushSubscriptionJSON[]> {
 }
 
 export async function saveSubscription(sub: PushSubscriptionJSON): Promise<{ stored: boolean }> {
-    if (!sub?.endpoint || !sub?.keys?.p256dh || !sub?.keys?.auth) {
+    if (
+        !sub?.endpoint ||
+        typeof sub.endpoint !== 'string' ||
+        sub.endpoint.length > 2048 ||
+        !sub.endpoint.startsWith('https://') ||
+        !sub?.keys?.p256dh ||
+        !sub?.keys?.auth ||
+        sub.keys.p256dh.length > 512 ||
+        sub.keys.auth.length > 256
+    ) {
         throw new Error('Invalid subscription');
     }
     const kv = redis();
