@@ -27,7 +27,7 @@ export default function CategoryFilter({ activeCategory, onCategoryChange, count
                     >
                         {category}
                         {typeof count === 'number' && (
-                            <span className={`ml-1.5 text-[10px] font-semibold ${isActive ? 'text-white/70' : 'text-gray-400'}`}>
+                            <span className={`ml-1.5 text-[11px] font-semibold ${isActive ? 'text-white/70' : 'text-gray-400'}`}>
                                 {count}
                             </span>
                         )}

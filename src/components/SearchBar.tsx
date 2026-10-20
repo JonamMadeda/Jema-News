@@ -16,7 +16,7 @@ export default function SearchBar({ value, onChange }: SearchBarProps) {
                 onChange={(e) => onChange(e.target.value)}
                 aria-label="Search news"
                 autoComplete="off"
-                className="w-full bg-white border-b border-gray-200 py-2.5 pr-9 focus:outline-none focus:border-[#001f3f] text-[15px] transition-colors placeholder:text-gray-400 rounded-t-md"
+                className="w-full bg-white border-b border-gray-200 py-2.5 pr-9 focus:outline-none focus:border-[#001f3f] text-sm transition-colors placeholder:text-gray-400 rounded-t-md"
             />
             {value ? (
                 <button

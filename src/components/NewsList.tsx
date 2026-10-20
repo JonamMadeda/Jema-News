@@ -1,24 +1,106 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { NewsItem } from '@/lib/rss';
+import type { NewsItem } from '@/lib/types';
 import NewsCard from './NewsCard';
 import SearchBar from './SearchBar';
 import CategoryFilter from './CategoryFilter';
 import NewsDetail from './NewsDetail';
 import DailyDigest from './DailyDigest';
+import AskNews from './AskNews';
 import LoadingMessage from './LoadingMessage';
 import { loadBookmarks, loadHistory, recordHistory, toggleBookmark } from '@/lib/storage';
+import { isAppTab, type Tab } from '@/lib/tabs';
 import { TAB_EVENT, REFRESH_EVENT, getInitialTab, setAppTab } from './Navbar';
 
-type Tab = 'latest' | 'brief' | 'trending' | 'saved';
-
-const TABS: { id: Tab; label: string }[] = [
-    { id: 'brief', label: 'Daily Brief' },
-    { id: 'latest', label: 'Latest News' },
-    { id: 'trending', label: 'Trending' },
-    { id: 'saved', label: 'Saved' },
+const TABS: { id: Tab; label: string; short: string }[] = [
+    { id: 'ask', label: 'Ask AI', short: 'Ask' },
+    { id: 'brief', label: 'Daily Brief', short: 'Brief' },
+    { id: 'latest', label: 'Latest News', short: 'Latest' },
+    { id: 'trending', label: 'Trending', short: 'Trending' },
+    { id: 'saved', label: 'Saved', short: 'Saved' },
 ];
+
+function TabIcon({ tab }: { tab: Tab }) {
+    const props = {
+        className: 'w-[21px] h-[21px]',
+        viewBox: '0 0 24 24',
+        fill: 'none',
+        stroke: 'currentColor',
+        strokeWidth: 1.8,
+        strokeLinecap: 'round' as const,
+        strokeLinejoin: 'round' as const,
+        'aria-hidden': true,
+    };
+    switch (tab) {
+        case 'ask':
+            return (
+                <svg {...props}>
+                    <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H7l-4 3v-5.7A8.5 8.5 0 1 1 21 11.5Z" />
+                    <path d="M8.5 10.5h7M8.5 14h4.5" />
+                </svg>
+            );
+        case 'brief':
+            return (
+                <svg {...props}>
+                    <rect x="4" y="4" width="16" height="16" rx="2" />
+                    <path d="M8 9h8M8 13h8M8 17h4" />
+                </svg>
+            );
+        case 'latest':
+            return (
+                <svg {...props}>
+                    <circle cx="12" cy="12" r="8.5" />
+                    <path d="M12 7.5V12l3 1.8" />
+                </svg>
+            );
+        case 'trending':
+            return (
+                <svg {...props}>
+                    <path d="M3 17l6-6 4 4 8-8" />
+                    <path d="M15 7h6v6" />
+                </svg>
+            );
+        case 'saved':
+            return (
+                <svg {...props}>
+                    <path d="M6 4h12v17l-6-4-6 4V4Z" />
+                </svg>
+            );
+    }
+}
+
+function MobileTabBar({ activeTab, onChange }: { activeTab: Tab; onChange: (tab: Tab) => void }) {
+    return (
+        <nav
+            aria-label="Sections"
+            className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]"
+        >
+            <div className="flex items-stretch">
+                {TABS.map((t) => {
+                    const active = activeTab === t.id;
+                    return (
+                        <button
+                            key={t.id}
+                            onClick={() => onChange(t.id)}
+                            aria-current={active ? 'page' : undefined}
+                            className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[56px] pt-2 pb-1 text-[10px] font-bold uppercase tracking-wide transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#001f3f] ${active ? 'text-[#001f3f]' : 'text-gray-500 hover:text-gray-900'
+                                }`}
+                        >
+                            <span
+                                aria-hidden="true"
+                                className={`absolute top-0 h-0.5 w-7 rounded-b-full bg-[#001f3f] transition-opacity ${active ? 'opacity-100' : 'opacity-0'
+                                    }`}
+                            />
+                            <TabIcon tab={t.id} />
+                            {t.short}
+                        </button>
+                    );
+                })}
+            </div>
+        </nav>
+    );
+}
 
 function getPageNumbers(current: number, total: number): (number | '…')[] {
     if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
@@ -40,10 +122,10 @@ function TrendingRows({ items, onSelect }: { items: NewsItem[]; onSelect: (item:
                         {i + 1}
                     </span>
                     <span className="min-w-0">
-                        <span className="block text-sm font-medium text-gray-900 leading-snug line-clamp-2 group-hover:text-[#001f3f]">
+                        <span className="block text-[15px] font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-[#001f3f]">
                             {t.title}
                         </span>
-                        <span className="block mt-1 text-[11px] text-gray-600 uppercase tracking-wide truncate">
+                        <span className="block mt-1 text-[11px] font-semibold text-gray-600 uppercase tracking-wide truncate">
                             {t.source} • {t.category}
                         </span>
                     </span>
@@ -52,13 +134,13 @@ function TrendingRows({ items, onSelect }: { items: NewsItem[]; onSelect: (item:
         </div>
     );
 }
-
-function readParams() {
-    if (typeof window === 'undefined') return { tab: 'brief' as Tab, cat: 'All', q: '', page: 1, story: '' };
+function readParams(fallbackTab: Tab = 'ask') {
+    // fallbackTab comes from the server (?tab=) so SSR and hydration agree
+    if (typeof window === 'undefined') return { tab: fallbackTab, cat: 'All', q: '', page: 1, story: '' };
     const s = new URLSearchParams(window.location.search);
     const t = s.get('tab');
     return {
-        tab: (t === 'latest' || t === 'trending' || t === 'saved' ? t : 'brief') as Tab,
+        tab: (isAppTab(t) ? t : fallbackTab) as Tab,
         cat: s.get('cat') || 'All',
         q: s.get('q') || '',
         page: Math.max(1, parseInt(s.get('page') || '1', 10) || 1),
@@ -75,7 +157,7 @@ function writeParams(patch: Partial<{ tab: Tab; cat: string; q: string; page: nu
         };
         const cur = readParams();
         const next = { ...cur, ...patch };
-        apply('tab', next.tab, 'brief');
+        apply('tab', next.tab, 'ask');
         apply('cat', next.cat, 'All');
         apply('q', next.q, '');
         apply('page', String(next.page), '1');
@@ -90,8 +172,8 @@ function writeParams(patch: Partial<{ tab: Tab; cat: string; q: string; page: nu
     }
 }
 
-export default function NewsList() {
-    const initial = useRef(readParams());
+export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
+    const initial = useRef(readParams(initialTab));
     const [activeTab, setActiveTab] = useState<Tab>(initial.current.tab);
     const [items, setItems] = useState<NewsItem[]>([]);
     const [total, setTotal] = useState(0);
@@ -117,6 +199,17 @@ export default function NewsList() {
     const abortRef = useRef<AbortController | null>(null);
     const pageCache = useRef(new Map<string, Awaited<ReturnType<typeof fetchPage>>>());
     const LIMIT = 6;
+    const PAGE_CACHE_CAP = 20;
+
+    function cacheSet(key: string, value: Awaited<ReturnType<typeof fetchPage>>) {
+        const m = pageCache.current;
+        if (m.has(key)) m.delete(key);
+        m.set(key, value);
+        if (m.size > PAGE_CACHE_CAP) {
+            const oldest = m.keys().next().value;
+            if (oldest !== undefined) m.delete(oldest);
+        }
+    }
 
     function showToast(msg: string) {
         setToast(msg);
@@ -166,7 +259,7 @@ export default function NewsList() {
             setError(null);
             try {
                 const data = await fetchPage(page, cat, q, ctrl.signal);
-                pageCache.current.set(key, data);
+                cacheSet(key, data);
                 setItems(data.items);
                 setTotal(data.total);
                 setTotalPages(data.totalPages);
@@ -185,7 +278,7 @@ export default function NewsList() {
             const nextKey = pageKey(page + 1, cat, q);
             if (!pageCache.current.has(nextKey)) {
                 fetchPage(page + 1, cat, q)
-                    .then((data) => pageCache.current.set(nextKey, data))
+                    .then((data) => cacheSet(nextKey, data))
                     .catch(() => {});
             }
         }
@@ -334,14 +427,9 @@ export default function NewsList() {
     function handleTabListKey(e: React.KeyboardEvent) {
         if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
         e.preventDefault();
-        // Trending tab is mobile-only — skip it in the cycle on desktop
-        const visible =
-            typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches
-                ? TABS.filter((t) => t.id !== 'trending')
-                : TABS;
-        const i = visible.findIndex((t) => t.id === activeTab);
+        const i = TABS.findIndex((t) => t.id === activeTab);
         const at = i === -1 ? 0 : i;
-        const next = e.key === 'ArrowRight' ? visible[(at + 1) % visible.length] : visible[(at + visible.length - 1) % visible.length];
+        const next = e.key === 'ArrowRight' ? TABS[(at + 1) % TABS.length] : TABS[(at + TABS.length - 1) % TABS.length];
         handleTabChange(next.id);
     }
 
@@ -382,8 +470,10 @@ export default function NewsList() {
         );
     }
 
-    if (loading) {
+    // Chat renders immediately — news loads in the background
+    if (loading && activeTab !== 'ask') {
         return (
+            <>
             <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start" aria-busy="true" aria-label="Loading news">
                 <div className="space-y-4">
                     <div className="bg-white border border-gray-200 rounded-md p-3">
@@ -419,11 +509,14 @@ export default function NewsList() {
                     </div>
                 </div>
             </div>
+            <MobileTabBar activeTab={activeTab} onChange={handleTabChange} />
+            </>
         );
     }
 
-    if (error) {
+    if (error && activeTab !== 'ask') {
         return (
+            <>
             <div className="text-center py-14 bg-white border border-gray-200 rounded-md">
                 <div className="text-gray-600">
                     <p className="text-[13px] uppercase tracking-wide font-semibold mb-4">{error}</p>
@@ -438,9 +531,12 @@ export default function NewsList() {
                     </button>
                 </div>
             </div>
+            <MobileTabBar activeTab={activeTab} onChange={handleTabChange} />
+            </>
         );
     }
 
+    // Locale/timezone dependent: server/client text may differ — accept client text
     const formattedDate = new Intl.DateTimeFormat('en-US', {
         weekday: 'short',
         month: 'short',
@@ -448,26 +544,31 @@ export default function NewsList() {
     }).format(new Date()).toUpperCase();
 
     return (
-        <div ref={listTopRef} className="flex flex-col scroll-mt-24">
+        <div
+            ref={listTopRef}
+            className={`flex flex-col scroll-mt-24 ${
+                activeTab === 'ask' ? 'h-[calc(100dvh-136px-env(safe-area-inset-bottom))] md:h-[calc(100dvh-96px)]' : ''
+            }`}
+        >
             {toast && (
                 <div role="status" className="mb-3 bg-[#001f3f] text-white text-[12px] font-semibold px-3 py-2 rounded-md">
                     {toast}
                 </div>
             )}
-            <div className="md:hidden mb-1.5 flex items-center justify-between gap-2">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+            <div className="md:hidden shrink-0 mb-1.5 flex items-center justify-between gap-2">
+                <p suppressHydrationWarning className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
                     {formattedDate}
                 </p>
-                <span className="bg-gray-100 px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wide text-gray-600 whitespace-nowrap">
+                <span className="bg-gray-100 px-2 py-0.5 rounded-md text-[11px] font-semibold uppercase tracking-wide text-gray-600 whitespace-nowrap">
                     {total} • Live
                 </span>
             </div>
-            <div className="flex items-center justify-between gap-2 mb-3 border-b border-gray-100 pb-2">
+            <div className="hidden md:flex shrink-0 items-center justify-between gap-2 mb-3 border-b border-gray-100 pb-2">
                 <div
                     role="tablist"
-                    aria-label="Switch between brief, latest and trending"
+                    aria-label="Switch between chat, brief, latest, trending and saved"
                     onKeyDown={handleTabListKey}
-                    className="flex w-full sm:inline-flex sm:w-auto bg-white border border-gray-200 p-0.5 rounded-md gap-0.5"
+                    className="flex w-full min-w-0 overflow-x-auto sm:overflow-visible sm:inline-flex sm:w-auto bg-white border border-gray-200 p-0.5 rounded-md gap-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 >
                     {TABS.map((t) => (
                         <button
@@ -476,7 +577,7 @@ export default function NewsList() {
                             aria-selected={activeTab === t.id}
                             tabIndex={activeTab === t.id ? 0 : -1}
                             onClick={() => handleTabChange(t.id)}
-                            className={`min-h-[32px] rounded-md px-2 sm:px-4 text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2 active:scale-[0.98] ${t.id === 'trending' ? 'lg:hidden ' : ''}flex-1 sm:flex-none ${activeTab === t.id
+                            className={`min-h-[32px] rounded-md px-2 sm:px-4 text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2 active:scale-[0.98] flex-1 sm:flex-none ${activeTab === t.id
                                 ? 'bg-[#001f3f] text-white shadow-md shadow-blue-900/20'
                                 : 'text-gray-600 hover:text-gray-900'
                                 }`}
@@ -486,7 +587,7 @@ export default function NewsList() {
                     ))}
                 </div>
                 <div className="hidden md:flex items-center gap-2 shrink-0 min-w-0">
-                    <span className="hidden md:block text-[11px] font-bold uppercase tracking-wide text-gray-900 truncate">
+                    <span suppressHydrationWarning className="hidden md:block text-[11px] font-bold uppercase tracking-wide text-gray-900 truncate">
                         {formattedDate}
                     </span>
                     <span className="bg-gray-100 px-2 py-0.5 rounded-md text-[11px] font-semibold uppercase tracking-wide text-gray-600 whitespace-nowrap">
@@ -496,16 +597,12 @@ export default function NewsList() {
             </div>
 
             {activeTab === 'brief' ? (
-                <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
+                <div className="mx-auto w-full max-w-3xl">
                     <DailyDigest />
-                    <aside className="hidden lg:block lg:sticky lg:top-20">
-                        <div className="bg-white border border-gray-200 rounded-md p-3">
-                            <h3 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mb-3">
-                                Trending now
-                            </h3>
-                            <TrendingRows items={trending} onSelect={handleSelect} />
-                        </div>
-                    </aside>
+                </div>
+            ) : activeTab === 'ask' ? (
+                <div className="flex-1 min-h-0 min-w-0 mx-auto w-full max-w-3xl">
+                    <AskNews />
                 </div>
             ) : activeTab === 'latest' ? (
                 <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
@@ -554,7 +651,7 @@ export default function NewsList() {
                                                 tabIndex={0}
                                                 className="group cursor-pointer mb-4 rounded-r-md rounded-l-none border border-gray-200 border-l-[3px] border-l-[#001f3f] bg-white pl-4 pr-4 py-4 hover:border-gray-300 hover:shadow-sm transition-all active:scale-[0.995] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
                                             >
-                                                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wide mb-2">
+                                                <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide mb-2">
                                                     <span className="bg-[#001f3f] text-white px-2 py-0.5 rounded-md">Top story</span>
                                                     <span className="text-gray-600">{heroItem.category}</span>
                                                     <span aria-hidden="true" className="text-gray-300">•</span>
@@ -563,7 +660,7 @@ export default function NewsList() {
                                                 <h3 className="text-lg md:text-[22px] font-bold text-gray-900 group-hover:text-[#001f3f] leading-tight tracking-tight">
                                                     {heroItem.title}
                                                 </h3>
-                                                <p className="mt-2 text-sm md:text-[15px] text-gray-600 leading-relaxed line-clamp-2">
+                                                <p className="mt-2 text-sm text-gray-600 leading-relaxed line-clamp-2">
                                                     {heroItem.contentSnippet}
                                                 </p>
                                             </article>
@@ -658,12 +755,6 @@ export default function NewsList() {
                                 >
                                     Read Daily Brief →
                                 </button>
-                                <button
-                                    onClick={() => handleTabChange('trending')}
-                                    className="lg:hidden w-full min-h-[32px] text-[11px] font-bold uppercase tracking-wide border border-gray-200 text-[#001f3f] rounded-md hover:border-[#001f3f] hover:bg-gray-50 transition-colors whitespace-nowrap active:scale-[0.99]"
-                                >
-                                    See trending →
-                                </button>
                             </div>
                         </div>
                         <div className="hidden lg:block bg-white border border-gray-200 rounded-md p-3">
@@ -692,10 +783,10 @@ export default function NewsList() {
                                             {i + 1}
                                         </span>
                                         <span className="min-w-0 flex-1">
-                                            <span className="block text-[15px] font-medium text-gray-900 leading-snug line-clamp-2 group-hover:text-[#001f3f]">
+                                            <span className="block text-[15px] font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-[#001f3f]">
                                                 {t.title}
                                             </span>
-                                            <span className="block mt-1 text-[11px] text-gray-600 uppercase tracking-wide truncate">
+                                            <span className="block mt-1 text-[11px] font-semibold text-gray-600 uppercase tracking-wide truncate">
                                                 {t.source} • {t.category}
                                             </span>
                                         </span>
@@ -791,6 +882,7 @@ export default function NewsList() {
                     </aside>
                 </div>
             )}
+            <MobileTabBar activeTab={activeTab} onChange={handleTabChange} />
         </div>
     );
 }

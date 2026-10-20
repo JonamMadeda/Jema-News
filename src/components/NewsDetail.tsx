@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import LoadingMessage from './LoadingMessage';
-import { NewsItem } from '@/lib/rss';
+import type { NewsItem } from '@/lib/types';
 
 type NewsDetailProps = {
     item: NewsItem;
@@ -126,7 +126,7 @@ export default function NewsDetail({ item, onBack, saved = false, onToggleSave }
                     {item.title}
                 </h2>
 
-                <p className="text-[15px] md:text-base text-gray-600 leading-relaxed mb-6">
+                <p className="text-sm text-gray-600 leading-relaxed mb-6">
                     {item.contentSnippet}
                 </p>
 

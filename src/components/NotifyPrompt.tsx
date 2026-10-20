@@ -66,7 +66,7 @@ export default function NotifyPrompt() {
             role="dialog"
             aria-live="polite"
             aria-label="Enable daily briefing alerts"
-            className="fixed bottom-4 inset-x-4 z-[60] sm:left-auto sm:right-6 sm:bottom-6 sm:w-80 animate-in fade-in slide-in-from-bottom-4 duration-300"
+            className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] inset-x-4 z-[60] md:left-auto md:right-6 md:bottom-6 md:w-80 animate-in fade-in slide-in-from-bottom-4 duration-300"
         >
             <div className="bg-[#001f3f] text-white rounded-md p-4 shadow-2xl shadow-blue-900/30">
                 <p className="text-[11px] font-bold uppercase tracking-wide mb-1">

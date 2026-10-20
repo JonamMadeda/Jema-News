@@ -171,8 +171,8 @@ export default function DailyDigest() {
             <div className="bg-white border border-gray-200 rounded-md p-3 md:p-4">
                 <ReactMarkdown
                     components={{
-                        h1: (props) => <h3 className="text-xs font-bold uppercase tracking-wide text-[#001f3f] mt-4 mb-2 first:mt-0" {...props} />,
-                        h2: (props) => <h3 className="text-xs font-bold uppercase tracking-wide text-[#001f3f] mt-4 mb-2 first:mt-0 pb-1.5 border-b border-gray-100" {...props} />,
+                        h1: (props) => <h3 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mt-4 mb-2 first:mt-0" {...props} />,
+                        h2: (props) => <h3 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mt-4 mb-2 first:mt-0 pb-1.5 border-b border-gray-100" {...props} />,
                         h3: (props) => <h4 className="text-[11px] font-bold uppercase tracking-wide text-gray-900 mt-3 mb-1.5" {...props} />,
                         p: (props) => <p className="text-sm leading-relaxed text-gray-700 mb-2.5" {...props} />,
                         ul: (props) => <ul className="space-y-2 mb-3" {...props} />,

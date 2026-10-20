@@ -1,4 +1,4 @@
-import { NewsItem } from '@/lib/rss';
+import type { NewsItem } from '@/lib/types';
 
 type NewsCardProps = {
     item: NewsItem;
@@ -35,7 +35,7 @@ export default function NewsCard({ item, onSelect, saved = false, onToggleSave }
         >
             <div className="flex flex-col gap-1.5 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap text-[11px] font-semibold uppercase tracking-wide text-gray-600">
-                    <span className="px-2 py-px border border-gray-200 text-gray-600 rounded-md text-[10px] font-bold whitespace-nowrap bg-white">
+                    <span className="px-2 py-px border border-gray-200 text-gray-600 rounded-md text-[11px] font-bold whitespace-nowrap bg-white">
                         {item.category}
                     </span>
                         <span className="text-gray-900 font-semibold truncate">{item.source}</span>
@@ -59,7 +59,7 @@ export default function NewsCard({ item, onSelect, saved = false, onToggleSave }
                         )}
                 </div>
 
-                <h3 className="text-[16px] md:text-[17px] font-bold text-gray-900 group-hover:text-[#001f3f] leading-snug">
+                <h3 className="text-[15px] font-semibold text-gray-900 group-hover:text-[#001f3f] leading-snug">
                     {item.title}
                     <span aria-hidden="true" className="inline-block ml-1.5 text-[#001f3f] opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all">→</span>
                 </h3>
