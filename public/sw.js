@@ -2,7 +2,7 @@
 // - App shell precache + safe runtime caching (offline shell fallback)
 // - Web Push: renders daily-brief notifications, opens the app on tap.
 
-const VERSION = 'jemanews-v1';
+const VERSION = 'jemanews-v3';
 const PRECACHE = ["/", "/manifest.json", "/favicon.ico", "/web-app-manifest-192x192.png"];
 
 self.addEventListener('install', (event) => {
@@ -19,8 +19,17 @@ self.addEventListener('activate', (event) => {
     event.waitUntil(
         (async () => {
             const keys = await caches.keys();
-            await Promise.all(keys.filter((k) => k !== VERSION).map((k) => caches.delete(k)));
+            const stale = keys.filter((k) => k !== VERSION);
+            await Promise.all(stale.map((k) => caches.delete(k)));
             await self.clients.claim();
+            // An old cache may have pinned dev chunks. Reload open tabs so they
+            // pick up fresh assets instead of running a stale bundle.
+            if (stale.length > 0) {
+                const windows = await self.clients.matchAll({ type: 'window' });
+                await Promise.all(
+                    windows.map((client) => ('navigate' in client ? client.navigate(client.url) : null))
+                );
+            }
         })()
     );
 });
@@ -48,6 +57,10 @@ self.addEventListener('fetch', (event) => {
         );
         return;
     }
+
+    // Never cache framework/dev chunks. Next handles their caching itself and a
+    // cache-first SW rule pins stale builds across deploys and HMR edits.
+    if (url.pathname.startsWith('/_next/')) return;
 
     // Static assets: cache first
     if (/\.(png|ico|svg|css|js|woff2?)$/.test(url.pathname)) {
