@@ -1,7 +1,5 @@
-'use client';
-
 // Local persistence for bookmarks + reading history. No account needed;
-// ids are stable per article link.
+// ids are stable per article link (sha256 hash, with legacy base64url fallback).
 
 const BOOKMARKS_KEY = 'jema:bookmarks';
 const HISTORY_KEY = 'jema:history';

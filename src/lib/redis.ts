@@ -15,3 +15,9 @@ export function getRedis(): Redis | null {
         return null;
     }
 }
+
+let shared: Redis | null | undefined;
+export function getSharedRedis(): Redis | null {
+    if (shared === undefined) shared = getRedis();
+    return shared;
+}
