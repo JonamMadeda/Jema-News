@@ -66,28 +66,33 @@ export default function NotifyPrompt() {
             role="dialog"
             aria-live="polite"
             aria-label="Enable daily briefing alerts"
-            className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] inset-x-4 z-[60] md:left-auto md:right-6 md:bottom-6 md:w-80 animate-in fade-in slide-in-from-bottom-4 duration-300"
+            className="fixed bottom-6 inset-x-4 z-[60] md:left-auto md:right-6 md:bottom-6 md:w-84 animate-in fade-in slide-in-from-bottom-4 duration-300"
         >
-            <div className="bg-[#001f3f] text-white rounded-md p-4 shadow-2xl shadow-blue-900/30">
-                <p className="text-[11px] font-bold uppercase tracking-wide mb-1">
-                    Morning brief, daily
-                </p>
-                <p className="text-sm text-white/80 leading-relaxed mb-3">
-                    One notification a day when your briefing is ready. Nothing else, ever.
+            <div className="bg-slate-900 text-white rounded-2xl p-5 shadow-2xl border border-slate-700/70">
+                <div className="flex items-center gap-2 mb-2">
+                    <svg className="w-4 h-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.4-1.4A2 2 0 0118 14.3V11a6 6 0 00-4-5.7V5a2 2 0 10-4 0v.3A6 6 0 006 11v3.3c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-100">
+                        Morning Intelligence Briefing
+                    </p>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed mb-4">
+                    Get a single notification each morning when Kenya&apos;s daily brief is prepared. No spam, no marketing.
                 </p>
                 <div className="flex gap-2">
                     <button
                         onClick={enable}
                         disabled={busy}
-                        className="flex-1 min-h-[32px] text-[11px] font-bold uppercase tracking-wide bg-white text-[#001f3f] rounded-md hover:bg-white/90 transition-colors whitespace-nowrap active:scale-[0.98] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                        className="flex-1 min-h-[36px] text-xs font-bold bg-white text-slate-900 rounded-xl hover:bg-slate-100 transition-all whitespace-nowrap active:scale-98 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                     >
-                        {busy ? 'Enabling…' : 'Enable'}
+                        {busy ? 'Enabling…' : 'Enable Alerts'}
                     </button>
                     <button
                         onClick={dismiss}
-                        className="min-h-[32px] text-[11px] font-bold uppercase tracking-wide px-4 text-white/70 hover:text-white border border-white/20 hover:bg-white/10 rounded-md transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                        className="min-h-[36px] text-xs font-semibold px-4 text-slate-400 hover:text-white border border-slate-700 hover:bg-white/5 rounded-xl transition-all whitespace-nowrap"
                     >
-                        Not now
+                        Later
                     </button>
                 </div>
             </div>

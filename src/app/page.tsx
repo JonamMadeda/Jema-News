@@ -9,7 +9,7 @@ export default async function Home({
   const { tab } = await searchParams;
   const t = Array.isArray(tab) ? tab[0] : tab;
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-4 md:py-6">
+    <div className="w-full h-full min-h-0 flex-1 flex flex-col">
       {/* Pass the URL tab so the server renders the same branch the client hydrates with */}
       <NewsList initialTab={(isAppTab(t) ? t : "ask") as Tab} />
     </div>

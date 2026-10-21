@@ -12,27 +12,28 @@ type Message = {
     error?: boolean;
 };
 
-const PRESETS = [
-    "What's trending?",
-    'Top stories today',
-    'Latest in politics',
-    'Business & economy',
-    'Health updates',
-    'Education news',
+const SUGGESTIONS = [
+    "What are the major headlines in Kenya today?",
+    "Latest business and economic news",
+    "Recent updates in national politics",
+    "Health and public sector developments",
+    "Education and university news",
 ];
 
 function stamp(): string {
     return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function Avatar() {
+function AssistantAvatar() {
     return (
-        <span
+        <div
             aria-hidden="true"
-            className="w-6 h-6 shrink-0 rounded-full bg-[#001f3f] text-white text-[10px] font-bold flex items-center justify-center select-none"
+            className="w-7 h-7 shrink-0 rounded-xl bg-slate-900 text-white flex items-center justify-center select-none"
         >
-            J
-        </span>
+            <svg className="w-3.5 h-3.5 text-slate-200" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L14.4 8.6L21 11L14.4 13.4L12 20L9.6 13.4L3 11L9.6 8.6L12 2Z" />
+            </svg>
+        </div>
     );
 }
 
@@ -40,14 +41,18 @@ export default function AskNews() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
-    const [copied, setCopied] = useState(false);
+    const [copiedId, setCopiedId] = useState<number | null>(null);
+    const [transcriptCopied, setTranscriptCopied] = useState(false);
     const idRef = useRef(0);
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
+    // Auto-scroll when messages update or loading state changes
     useEffect(() => {
         const el = scrollRef.current;
-        if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+        if (el) {
+            el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+        }
     }, [messages, loading]);
 
     async function ask(question: string) {
@@ -57,6 +62,7 @@ export default function AskNews() {
         idRef.current += 1;
         setMessages((m) => [...m, { id: idRef.current, role: 'user', text: q, at: stamp() }]);
         setLoading(true);
+
         try {
             const res = await fetch('/api/ask', {
                 method: 'POST',
@@ -64,7 +70,7 @@ export default function AskNews() {
                 body: JSON.stringify({ question: q }),
             });
             const json = await res.json().catch(() => null);
-            if (!res.ok) throw new Error(json?.error || 'Could not get an answer');
+            if (!res.ok) throw new Error(json?.error || 'Could not fetch an answer');
             idRef.current += 1;
             setMessages((m) => [
                 ...m,
@@ -80,7 +86,7 @@ export default function AskNews() {
                     text:
                         err instanceof Error && err.message
                             ? err.message
-                            : 'Something went wrong. Try again in a moment.',
+                            : 'Unable to connect to news intelligence. Please retry.',
                     at: stamp(),
                     error: true,
                 },
@@ -98,88 +104,93 @@ export default function AskNews() {
         if (prev) ask(prev.text);
     }
 
-    async function handleCopyLast() {
-        const last = [...messages].reverse().find((m) => m.role === 'assistant' && !m.error);
-        if (!last) return;
+    async function copyMessage(id: number, text: string) {
         try {
-            await navigator.clipboard.writeText(last.text);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+            await navigator.clipboard.writeText(text);
+            setCopiedId(id);
+            setTimeout(() => setCopiedId(null), 2000);
         } catch {
-            setCopied(false);
+            setCopiedId(null);
         }
     }
 
-    const canCopy = messages.some((m) => m.role === 'assistant' && !m.error);
+    async function copyTranscript() {
+        const text = messages
+            .map((m) => `${m.role === 'user' ? 'You' : 'Assistant'}: ${m.text}`)
+            .join('\n\n');
+        if (!text) return;
+        try {
+            await navigator.clipboard.writeText(text);
+            setTranscriptCopied(true);
+            setTimeout(() => setTranscriptCopied(false), 2000);
+        } catch {
+            setTranscriptCopied(false);
+        }
+    }
 
     return (
-        <div className="flex flex-col h-full min-h-0">
-            <div className="shrink-0 bg-[#001f3f] text-white rounded-md px-3 py-2.5">
-                <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0 flex items-center gap-2.5">
-                        <span className="w-7 h-7 shrink-0 rounded-full bg-white/15 flex items-center justify-center text-[13px] font-bold">
-                            J
-                        </span>
-                        <div className="min-w-0">
-                            <h2 className="text-[11px] font-bold uppercase tracking-wide whitespace-nowrap">
-                                Ask Jemanews
-                            </h2>
-                            <p className="text-[12px] text-white/60 truncate">
-                                Answers from today&apos;s headlines
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                        {canCopy && (
+        <div className="w-full h-full flex flex-col min-h-0 bg-white border-0 shadow-none">
+            {/* Minimal Header Bar */}
+            <div className="shrink-0 h-12 border-b border-slate-100 px-4 sm:px-6 flex items-center justify-between bg-white z-10">
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-800">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>Kenya News Intelligence</span>
+                    <span className="text-slate-300 hidden sm:inline">•</span>
+                    <span className="text-slate-400 font-normal hidden sm:inline">Verified from today&apos;s headlines</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    {messages.length > 0 && (
+                        <>
                             <button
-                                onClick={handleCopyLast}
-                                className="min-h-[32px] px-2 text-[11px] font-bold uppercase tracking-wide text-white/70 hover:text-white hover:bg-white/10 transition-colors rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                                onClick={copyTranscript}
+                                className="text-xs font-medium text-slate-500 hover:text-slate-900 px-2 py-1 rounded-md hover:bg-slate-50 transition-colors"
                             >
-                                {copied ? 'Copied' : 'Copy'}
+                                {transcriptCopied ? 'Copied ✓' : 'Copy chat'}
                             </button>
-                        )}
-                        {messages.length > 0 && (
                             <button
                                 onClick={() => setMessages([])}
-                                aria-label="Clear conversation"
+                                aria-label="Clear chat"
                                 title="Clear conversation"
-                                className="w-8 h-8 inline-flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                                className="text-xs font-medium text-slate-500 hover:text-slate-900 px-2 py-1 rounded-md hover:bg-slate-50 transition-colors"
                             >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.9 12.1A2 2 0 0116.1 21H7.9a2 2 0 01-2-1.9L5 7m5-4h4M4 7h16" />
-                                </svg>
+                                Reset
                             </button>
-                        )}
-                    </div>
+                        </>
+                    )}
                 </div>
             </div>
 
-            <div className="flex-1 min-h-0 mt-3 flex flex-col bg-white border border-gray-200 rounded-md overflow-hidden">
-                <div
-                    ref={scrollRef}
-                    className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-3"
-                    aria-live="polite"
-                >
+            {/* Central Scrollable Message Stream */}
+            <div
+                ref={scrollRef}
+                className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-6 py-6 touch-pan-y"
+                aria-live="polite"
+            >
+                <div className="max-w-3xl mx-auto w-full space-y-6">
                     {messages.length === 0 && !loading && (
-                        <div className="h-full flex flex-col justify-center py-6">
-                            <div className="flex items-end gap-2">
-                                <Avatar />
-                                <div className="max-w-[85%] bg-gray-100 text-gray-800 text-sm leading-relaxed rounded-xl rounded-bl-sm px-3.5 py-2.5">
-                                    Hi — ask me anything about today&apos;s news in Kenya. I answer
-                                    from the latest headlines only, so nothing is invented.
-                                </div>
+                        <div className="py-12 sm:py-20 text-center max-w-xl mx-auto">
+                            <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-800 mx-auto flex items-center justify-center mb-4">
+                                <svg className="w-5 h-5 text-slate-700" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2L14.4 8.6L21 11L14.4 13.4L12 20L9.6 13.4L3 11L9.6 8.6L12 2Z" />
+                                </svg>
                             </div>
-                            <p className="mt-5 mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">
-                                Try one of these
+                            <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">
+                                How can I help you today?
+                            </h2>
+                            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mb-8 max-w-md mx-auto">
+                                Ask any question about breaking events, politics, business, or public sector news in Kenya. Answers are synthesized strictly from verified current reports.
                             </p>
-                            <div className="grid sm:grid-cols-2 gap-2">
-                                {PRESETS.slice(0, 4).map((p) => (
+
+                            <div className="space-y-2 text-left">
+                                {SUGGESTIONS.map((s) => (
                                     <button
-                                        key={p}
-                                        onClick={() => ask(p)}
-                                        className="text-left min-h-[44px] px-3 py-2 rounded-md border border-gray-200 text-[13px] font-medium text-gray-700 hover:border-[#001f3f] hover:text-[#001f3f] hover:bg-gray-50 transition-colors active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
+                                        key={s}
+                                        onClick={() => ask(s)}
+                                        className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-slate-200/80 bg-white hover:border-slate-800 hover:bg-slate-50/60 transition-all text-xs font-medium text-slate-700 active:scale-[0.99]"
                                     >
-                                        {p}
+                                        <span className="truncate">{s}</span>
+                                        <span className="text-slate-400 text-sm ml-2">→</span>
                                     </button>
                                 ))}
                             </div>
@@ -189,78 +200,103 @@ export default function AskNews() {
                     {messages.map((m) =>
                         m.role === 'user' ? (
                             <div key={m.id} className="flex flex-col items-end">
-                                <p className="max-w-[80%] bg-[#001f3f] text-white text-sm leading-relaxed rounded-xl rounded-br-sm px-3.5 py-2.5 whitespace-pre-wrap break-words">
-                                    {m.text}
-                                </p>
-                                <span className="text-[10px] text-gray-400 mt-1 mr-1">{m.at}</span>
+                                <div className="max-w-[85%] sm:max-w-[75%] bg-slate-900 text-white text-sm leading-relaxed rounded-2xl rounded-br-xs px-4 py-3 shadow-2xs">
+                                    <p className="whitespace-pre-wrap break-words">{m.text}</p>
+                                </div>
+                                <span className="text-[11px] font-medium text-slate-400 mt-1 mr-1">{m.at}</span>
                             </div>
                         ) : m.error ? (
-                            <div key={m.id} className="flex items-end gap-2">
-                                <Avatar />
+                            <div key={m.id} className="flex items-start gap-3">
+                                <AssistantAvatar />
                                 <div
-                                    className="max-w-[85%] bg-red-50 border border-red-200 text-red-800 text-sm leading-relaxed rounded-xl rounded-bl-sm px-3.5 py-2.5"
+                                    className="max-w-[90%] sm:max-w-[80%] bg-rose-50 border border-rose-200 text-rose-900 text-sm leading-relaxed rounded-2xl rounded-tl-xs p-4"
                                     role="alert"
                                 >
-                                    <p className="break-words">{m.text}</p>
+                                    <p className="font-medium break-words">{m.text}</p>
                                     <button
                                         onClick={() => retry(m.id)}
-                                        className="mt-2 min-h-[32px] text-[11px] font-bold uppercase tracking-wide px-3 py-1.5 border border-red-200 text-red-800 rounded-md hover:bg-white transition-colors active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                                        className="mt-3 px-3 py-1.5 text-xs font-semibold bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors active:scale-95"
                                     >
                                         Retry
                                     </button>
                                 </div>
                             </div>
                         ) : (
-                            <div key={m.id} className="flex items-end gap-2">
-                                <Avatar />
-                                <div className="min-w-0">
-                                    <div className="max-w-full bg-gray-100 text-gray-800 rounded-xl rounded-bl-sm px-3.5 py-2.5">
+                            <div key={m.id} className="flex items-start gap-3 group">
+                                <AssistantAvatar />
+                                <div className="min-w-0 max-w-[92%] sm:max-w-[85%]">
+                                    <div className="bg-slate-50 border border-slate-100 text-slate-800 rounded-2xl rounded-tl-xs px-4 sm:px-5 py-3.5">
                                         <ReactMarkdown
                                             components={{
                                                 p: (props) => (
-                                                    <p className="text-sm leading-relaxed break-words" {...props} />
+                                                    <p className="text-sm leading-relaxed break-words mb-2.5 last:mb-0" {...props} />
                                                 ),
                                                 strong: (props) => (
-                                                    <strong className="font-semibold text-gray-900" {...props} />
+                                                    <strong className="font-bold text-slate-900" {...props} />
+                                                ),
+                                                ul: (props) => (
+                                                    <ul className="list-disc pl-5 my-2 space-y-1.5 text-sm" {...props} />
+                                                ),
+                                                ol: (props) => (
+                                                    <ol className="list-decimal pl-5 my-2 space-y-1.5 text-sm" {...props} />
+                                                ),
+                                                li: (props) => (
+                                                    <li className="leading-relaxed" {...props} />
                                                 ),
                                             }}
                                         >
                                             {m.text}
                                         </ReactMarkdown>
                                     </div>
-                                    <span className="block text-[10px] text-gray-400 mt-1 ml-1">{m.at}</span>
+                                    <div className="flex items-center gap-2 mt-1.5 ml-1">
+                                        <span className="text-[11px] font-medium text-slate-400">{m.at}</span>
+                                        <span className="text-slate-300">•</span>
+                                        <button
+                                            onClick={() => copyMessage(m.id, m.text)}
+                                            className="text-[11px] font-medium text-slate-500 hover:text-slate-800 transition-colors"
+                                        >
+                                            {copiedId === m.id ? 'Copied ✓' : 'Copy'}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         )
                     )}
 
                     {loading && (
-                        <div className="flex items-end gap-2">
-                            <Avatar />
-                            <div className="bg-gray-100 rounded-xl rounded-bl-sm px-3.5 py-2.5">
+                        <div className="flex items-start gap-3">
+                            <AssistantAvatar />
+                            <div className="bg-slate-50 border border-slate-100 rounded-2xl rounded-tl-xs px-4 sm:px-5 py-3.5">
                                 <LoadingMessage
-                                    stages={['Checking today’s headlines…', 'Drafting your answer…']}
-                                    intervalMs={1600}
+                                    stages={[
+                                        'Scanning today’s headlines…',
+                                        'Verifying reporting sources…',
+                                        'Synthesizing concise answer…',
+                                    ]}
+                                    intervalMs={1500}
                                 />
                             </div>
                         </div>
                     )}
                 </div>
+            </div>
 
-                <div className="shrink-0 border-t border-gray-100 px-3 py-2.5">
+            {/* Central Fixed Bottom Input Dock */}
+            <div className="shrink-0 bg-white border-t border-slate-100 px-4 py-3 sm:py-4">
+                <div className="max-w-3xl mx-auto w-full">
                     {messages.length > 0 && (
                         <div
-                            className="flex gap-2 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                            className="flex gap-2 overflow-x-auto pb-2.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                             aria-label="Suggested questions"
                         >
-                            {PRESETS.map((p) => (
+                            {SUGGESTIONS.map((s) => (
                                 <button
-                                    key={p}
-                                    onClick={() => ask(p)}
+                                    key={s}
+                                    onClick={() => ask(s)}
                                     disabled={loading}
-                                    className="shrink-0 whitespace-nowrap min-h-[32px] px-3 rounded-md border border-gray-200 text-[11px] font-bold uppercase tracking-wide text-[#001f3f] hover:border-[#001f3f] hover:bg-gray-50 transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
+                                    className="shrink-0 whitespace-nowrap px-3 py-1.5 rounded-full border border-slate-200 bg-white text-xs font-medium text-slate-600 hover:border-slate-800 hover:text-slate-900 transition-all active:scale-95 disabled:opacity-50"
                                 >
-                                    {p}
+                                    {s}
                                 </button>
                             ))}
                         </div>
@@ -271,27 +307,33 @@ export default function AskNews() {
                             e.preventDefault();
                             ask(input);
                         }}
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl p-1.5 focus-within:border-slate-800 focus-within:bg-white focus-within:ring-2 focus-within:ring-slate-900/10 transition-all"
                     >
                         <input
                             ref={inputRef}
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder="Ask about today’s news…"
-                            aria-label="Ask a question"
+                            placeholder="Ask about Kenya headlines, business, politics..."
+                            aria-label="Ask about Kenyan news"
                             autoComplete="off"
                             maxLength={300}
-                            className="flex-1 min-w-0 bg-white border border-gray-200 rounded-md px-3 py-2.5 text-sm focus:outline-none focus:border-[#001f3f] transition-colors placeholder:text-gray-400"
+                            className="flex-1 min-w-0 bg-transparent px-3 py-1.5 text-[16px] md:text-sm text-slate-800 focus:outline-none placeholder:text-slate-400"
                         />
                         <button
                             type="submit"
                             disabled={loading || input.trim() === ''}
-                            className="min-h-[40px] px-4 text-[11px] font-bold uppercase tracking-wide bg-[#001f3f] text-white rounded-md hover:bg-[#003366] transition-colors whitespace-nowrap active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2"
+                            aria-label="Send query"
+                            className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95"
                         >
-                            Send
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                            </svg>
                         </button>
                     </form>
+                    <p className="text-[11px] text-slate-400 text-center mt-2">
+                        Answers are synthesized strictly from verified Kenyan news sources.
+                    </p>
                 </div>
             </div>
         </div>

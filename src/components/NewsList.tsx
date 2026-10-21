@@ -8,6 +8,7 @@ import CategoryFilter from './CategoryFilter';
 import NewsDetail from './NewsDetail';
 import DailyDigest from './DailyDigest';
 import AskNews from './AskNews';
+import Sidebar from './Sidebar';
 import LoadingMessage from './LoadingMessage';
 import { loadBookmarks, loadHistory, recordHistory, toggleBookmark } from '@/lib/storage';
 import { isAppTab, type Tab } from '@/lib/tabs';
@@ -21,88 +22,6 @@ const TABS: { id: Tab; label: string; short: string }[] = [
     { id: 'saved', label: 'Saved', short: 'Saved' },
 ];
 
-function TabIcon({ tab }: { tab: Tab }) {
-    const props = {
-        className: 'w-[21px] h-[21px]',
-        viewBox: '0 0 24 24',
-        fill: 'none',
-        stroke: 'currentColor',
-        strokeWidth: 1.8,
-        strokeLinecap: 'round' as const,
-        strokeLinejoin: 'round' as const,
-        'aria-hidden': true,
-    };
-    switch (tab) {
-        case 'ask':
-            return (
-                <svg {...props}>
-                    <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H7l-4 3v-5.7A8.5 8.5 0 1 1 21 11.5Z" />
-                    <path d="M8.5 10.5h7M8.5 14h4.5" />
-                </svg>
-            );
-        case 'brief':
-            return (
-                <svg {...props}>
-                    <rect x="4" y="4" width="16" height="16" rx="2" />
-                    <path d="M8 9h8M8 13h8M8 17h4" />
-                </svg>
-            );
-        case 'latest':
-            return (
-                <svg {...props}>
-                    <circle cx="12" cy="12" r="8.5" />
-                    <path d="M12 7.5V12l3 1.8" />
-                </svg>
-            );
-        case 'trending':
-            return (
-                <svg {...props}>
-                    <path d="M3 17l6-6 4 4 8-8" />
-                    <path d="M15 7h6v6" />
-                </svg>
-            );
-        case 'saved':
-            return (
-                <svg {...props}>
-                    <path d="M6 4h12v17l-6-4-6 4V4Z" />
-                </svg>
-            );
-    }
-}
-
-function MobileTabBar({ activeTab, onChange }: { activeTab: Tab; onChange: (tab: Tab) => void }) {
-    return (
-        <nav
-            aria-label="Sections"
-            className="md:hidden fixed bottom-0 inset-x-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]"
-        >
-            <div className="flex items-stretch">
-                {TABS.map((t) => {
-                    const active = activeTab === t.id;
-                    return (
-                        <button
-                            key={t.id}
-                            onClick={() => onChange(t.id)}
-                            aria-current={active ? 'page' : undefined}
-                            aria-label={t.label}
-                            className={`relative flex-1 flex flex-col items-center justify-center gap-1 min-h-[60px] pt-2 pb-1.5 text-[11px] font-bold uppercase tracking-wide whitespace-nowrap transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#001f3f] ${active ? 'text-[#001f3f]' : 'text-gray-600 hover:text-gray-900'
-                                }`}
-                        >
-                            <span
-                                aria-hidden="true"
-                                className={`absolute top-0 h-0.5 w-7 rounded-b-full bg-[#001f3f] transition-opacity ${active ? 'opacity-100' : 'opacity-0'
-                                    }`}
-                            />
-                            <TabIcon tab={t.id} />
-                            {t.short}
-                        </button>
-                    );
-                })}
-            </div>
-        </nav>
-    );
-}
-
 function getPageNumbers(current: number, total: number): (number | '…')[] {
     if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
     if (current <= 4) return [1, 2, 3, 4, 5, '…', total];
@@ -112,21 +31,21 @@ function getPageNumbers(current: number, total: number): (number | '…')[] {
 
 function TrendingRows({ items, onSelect }: { items: NewsItem[]; onSelect: (item: NewsItem) => void }) {
     return (
-        <div className="space-y-3">
+        <div className="space-y-2">
             {items.map((t, i) => (
                 <button
                     key={`${t.id}-${i}`}
                     onClick={() => onSelect(t)}
-                    className="w-full text-left flex gap-3 group hover:bg-gray-50 rounded-md p-1 -m-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
+                    className="w-full text-left flex items-start gap-3 group hover:bg-slate-50/90 rounded-xl p-2 -mx-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
                 >
-                    <span className="text-lg font-bold text-gray-200 group-hover:text-[#001f3f] leading-none shrink-0 w-6 transition-colors">
+                    <span className="w-6 h-6 rounded-lg bg-slate-100 group-hover:bg-slate-900 group-hover:text-white flex items-center justify-center text-xs font-bold text-slate-500 shrink-0 transition-colors">
                         {i + 1}
                     </span>
-                    <span className="min-w-0">
-                        <span className="block text-[15px] font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-[#001f3f]">
+                    <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:text-blue-700 transition-colors">
                             {t.title}
                         </span>
-                        <span className="block mt-1 text-[11px] font-semibold text-gray-600 uppercase tracking-wide truncate">
+                        <span className="block mt-1 text-[11px] font-medium text-slate-500 truncate">
                             {t.source} • {t.category}
                         </span>
                     </span>
@@ -176,6 +95,7 @@ function writeParams(patch: Partial<{ tab: Tab; cat: string; q: string; page: nu
 export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
     const initial = useRef(readParams(initialTab));
     const [activeTab, setActiveTab] = useState<Tab>(initial.current.tab);
+    const [mobileOpen, setMobileOpen] = useState(false);
     const [items, setItems] = useState<NewsItem[]>([]);
     const [total, setTotal] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
@@ -417,8 +337,6 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
     const showHero = !isFiltering && safePage === 1 && paginatedNews.length > 0;
     const heroItem = showHero ? paginatedNews[0] : null;
     const restItems = showHero ? paginatedNews.slice(1) : paginatedNews;
-    // The feed counter only means something on the tabs that list the feed.
-    const showFeedCount = activeTab === 'latest' || activeTab === 'trending';
     // The hero is already shown above the feed, so drop it from the sidebar.
     const trendingWithoutHero = heroItem
         ? trending.filter((t) => t.id !== heroItem.id)
@@ -429,15 +347,6 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
         setAppTab(tab);
         setCurrentPage(1);
         window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    function handleTabListKey(e: React.KeyboardEvent) {
-        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-        e.preventDefault();
-        const i = TABS.findIndex((t) => t.id === activeTab);
-        const at = i === -1 ? 0 : i;
-        const next = e.key === 'ArrowRight' ? TABS[(at + 1) % TABS.length] : TABS[(at + TABS.length - 1) % TABS.length];
-        handleTabChange(next.id);
     }
 
     function handlePageChange(page: number) {
@@ -466,425 +375,404 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
         requestAnimationFrame(() => window.scrollTo(0, savedScroll.current || 0));
     }
 
-    if (selectedItem) {
-        return (
-            <NewsDetail
-                item={selectedItem}
-                onBack={handleBack}
-                saved={bookmarkIds.includes(selectedItem.id)}
-                onToggleSave={() => handleToggleBookmark(selectedItem)}
-            />
-        );
-    }
-
-    // Chat renders immediately — news loads in the background
-    if (loading && activeTab !== 'ask') {
-        return (
-            <>
-            <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start" aria-busy="true" aria-label="Loading news">
-                <div className="space-y-4">
-                    <div className="bg-white border border-gray-200 rounded-md p-3">
-                        <LoadingMessage
-                            stages={[
-                                'Connecting to Kenyan outlets…',
-                                'Gathering the latest headlines…',
-                                'Sorting stories by recency…',
-                            ]}
-                        />
-                    </div>
-                    <div className="bg-white border border-gray-200 rounded-md p-3 animate-pulse">
-                        <div className="space-y-2">
-                            <div className="h-2.5 bg-gray-100 w-28 rounded-md"></div>
-                            <div className="h-4 bg-gray-100 w-3/4 rounded"></div>
-                            <div className="h-3 bg-gray-100 w-full rounded"></div>
-                        </div>
-                    </div>
-                    {[...Array(4)].map((_, i) => (
-                        <div key={i} className="animate-pulse bg-white border border-gray-200 rounded-md p-3">
-                            <div className="space-y-2">
-                                <div className="h-2.5 bg-gray-100 w-28 rounded-md"></div>
-                                <div className="h-4 bg-gray-100 w-3/4 rounded"></div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                <div className="space-y-4">
-                    <div className="bg-white border border-gray-200 rounded-md p-3 animate-pulse space-y-2">
-                        <div className="h-3 bg-gray-100 w-1/2 rounded-md"></div>
-                        <div className="h-3 bg-gray-100 w-full rounded"></div>
-                        <div className="h-3 bg-gray-100 w-5/6 rounded"></div>
-                    </div>
-                </div>
-            </div>
-            <MobileTabBar activeTab={activeTab} onChange={handleTabChange} />
-            </>
-        );
-    }
-
-    if (error && activeTab !== 'ask') {
-        return (
-            <>
-            <div className="text-center py-14 bg-white border border-gray-200 rounded-md">
-                <div className="text-gray-600">
-                    <p className="text-[13px] uppercase tracking-wide font-semibold mb-4">{error}</p>
-                    <button
-                        onClick={() => {
-                            pageCache.current.clear();
-                            loadPage(currentPage, activeCategory, debouncedQuery);
-                        }}
-                        className="min-h-[32px] text-[11px] font-bold uppercase tracking-wide px-4 py-1.5 bg-[#001f3f] text-white rounded-md hover:bg-[#003366] transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2"
-                    >
-                        Retry
-                    </button>
-                </div>
-            </div>
-            <MobileTabBar activeTab={activeTab} onChange={handleTabChange} />
-            </>
-        );
-    }
-
-    // Locale/timezone dependent: server/client text may differ — accept client text
-    const formattedDate = new Intl.DateTimeFormat('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-    }).format(new Date()).toUpperCase();
-
     return (
-        <div
-            ref={listTopRef}
-            className={`flex flex-col scroll-mt-24 ${
-                activeTab === 'ask' ? 'h-[calc(100dvh-136px-env(safe-area-inset-bottom))] md:h-[calc(100dvh-96px)]' : ''
-            }`}
-        >
-            {toast && (
-                <div role="status" className="mb-3 bg-[#001f3f] text-white text-[12px] font-semibold px-3 py-2 rounded-md">
-                    {toast}
-                </div>
-            )}
-            <div className="flex shrink-0 items-center gap-2 mb-2 md:mb-3 md:pb-2 md:border-b md:border-gray-100">
-                <div
-                    role="tablist"
-                    aria-label="Switch between chat, brief, latest, trending and saved"
-                    onKeyDown={handleTabListKey}
-                    className="hidden md:inline-flex shrink-0 bg-white border border-gray-200 p-0.5 rounded-md gap-0.5"
-                >
-                    {TABS.map((t) => (
-                        <button
-                            key={t.id}
-                            role="tab"
-                            aria-selected={activeTab === t.id}
-                            tabIndex={activeTab === t.id ? 0 : -1}
-                            onClick={() => handleTabChange(t.id)}
-                            className={`min-h-[32px] rounded-md px-4 text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2 active:scale-[0.98] ${activeTab === t.id
-                                ? 'bg-[#001f3f] text-white shadow-md shadow-blue-900/20'
-                                : 'text-gray-600 hover:text-gray-900'
-                                }`}
-                        >
-                            {t.label}
-                        </button>
-                    ))}
-                </div>
-                <span
-                    suppressHydrationWarning
-                    className="md:ml-auto text-[11px] font-semibold uppercase tracking-wide text-gray-600 md:font-bold md:text-gray-900 truncate"
-                >
-                    {formattedDate}
-                </span>
-                {showFeedCount && (
-                    <span className="ml-auto md:ml-0 bg-gray-100 px-2 py-0.5 rounded-md text-[11px] font-semibold uppercase tracking-wide text-gray-600 whitespace-nowrap">
-                        {total} stories
-                    </span>
-                )}
-            </div>
+        <div className="flex flex-col md:flex-row h-dvh w-full overflow-hidden bg-slate-50">
+            {/* Left Sidebar */}
+            <Sidebar
+                activeTab={activeTab}
+                onSelectTab={handleTabChange}
+                mobileOpen={mobileOpen}
+                onCloseMobile={() => setMobileOpen(false)}
+            />
 
-            {activeTab === 'brief' ? (
-                <div className="mx-auto w-full max-w-3xl min-h-[60vh]">
-                    <DailyDigest />
-                </div>
-            ) : activeTab === 'ask' ? (
-                <div className="flex-1 min-h-0 min-w-0 mx-auto w-full max-w-3xl">
-                    <AskNews />
-                </div>
-            ) : activeTab === 'latest' ? (
-                <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
-                    <div className="min-w-0">
-                        <div className="bg-white border border-gray-200 rounded-md px-4 pt-3 pb-4">
-                            <div className="md:sticky md:top-12 z-30 bg-white/95 md:backdrop-blur-sm -mx-2 px-2 pt-2 pb-3 border-b border-gray-100">
-                                <SearchBar value={searchQuery} onChange={(v) => { setSearchQuery(v); setCurrentPage(1); }} />
-                                <CategoryFilter
-                                    activeCategory={activeCategory}
-                                    onCategoryChange={(c) => { setActiveCategory(c); setCurrentPage(1); }}
-                                    counts={counts}
+            {/* Main Content Area */}
+            <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden">
+                {/* Mobile top header bar */}
+                <header className="md:hidden shrink-0 h-12 border-b border-slate-200/80 bg-white px-3 flex items-center justify-between z-10">
+                    <button
+                        onClick={() => setMobileOpen(true)}
+                        aria-label="Open menu"
+                        className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-700 hover:bg-slate-100 active:scale-95 transition-all"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                    </button>
+                    <div className="flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold text-xs">
+                            J
+                        </span>
+                        <span className="font-bold text-slate-900 text-sm">
+                            Jemanews
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-semibold text-slate-600 uppercase tracking-wider px-2 py-0.5 bg-slate-100 rounded-md">
+                            {TABS.find((t) => t.id === activeTab)?.short || 'Chat'}
+                        </span>
+                    </div>
+                </header>
+
+                {toast && (
+                    <div className="fixed top-3 right-4 z-50 bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-lg animate-in fade-in">
+                        {toast}
+                    </div>
+                )}
+
+                {/* Right Workspace */}
+                <div ref={listTopRef} className="flex-1 min-h-0 w-full overflow-hidden flex flex-col">
+                    {selectedItem ? (
+                        <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-8 py-6">
+                            <div className="max-w-3xl mx-auto w-full">
+                                <NewsDetail
+                                    item={selectedItem}
+                                    onBack={handleBack}
+                                    saved={bookmarkIds.includes(selectedItem.id)}
+                                    onToggleSave={() => handleToggleBookmark(selectedItem)}
                                 />
                             </div>
-
-                            {isFiltering && (
-                                <p className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-gray-600" role="status">
-                                    {total} result{total === 1 ? '' : 's'}
-                                    {searchQuery.trim() && <> for &ldquo;{searchQuery.trim()}&rdquo;</>}
-                                    {activeCategory !== 'All' && <> in {activeCategory}</>}
-                                    <button
-                                        onClick={() => {
-                                            setSearchQuery('');
-                                            setActiveCategory('All');
-                                        }}
-                                        className="ml-3 underline underline-offset-4 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] rounded"
-                                    >
-                                        Clear
-                                    </button>
-                                </p>
-                            )}
-
-                            <div className="mt-2">
-                                {pageLoading && items.length > 0 && (
-                                    <div className="mb-2 rounded-md border border-gray-100 bg-gray-50 px-3 py-2">
-                                        <LoadingMessage stages={['Loading page…']} intervalMs={1200} />
+                        </div>
+                    ) : activeTab === 'ask' ? (
+                        <AskNews />
+                    ) : loading && items.length === 0 ? (
+                        <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-8 py-6">
+                            <div className="max-w-5xl mx-auto w-full space-y-4">
+                                <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-2xs">
+                                    <LoadingMessage
+                                        stages={[
+                                            'Connecting to Kenyan outlets…',
+                                            'Gathering the latest headlines…',
+                                            'Sorting stories by recency…',
+                                        ]}
+                                    />
+                                </div>
+                                {[...Array(4)].map((_, i) => (
+                                    <div key={i} className="animate-pulse bg-white border border-slate-200/80 rounded-2xl p-4 space-y-2">
+                                        <div className="h-3 bg-slate-100 w-28 rounded-md"></div>
+                                        <div className="h-4 bg-slate-100 w-3/4 rounded-md"></div>
+                                        <div className="h-3 bg-slate-100 w-full rounded-md"></div>
                                     </div>
-                                )}
-                                {paginatedNews.length > 0 ? (
-                                    <>
-                                        {heroItem && (
-                                            <article
-                                                onClick={() => handleSelect(heroItem)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') handleSelect(heroItem);
-                                                }}
-                                                tabIndex={0}
-                                                className="group cursor-pointer mb-4 rounded-r-md rounded-l-none border border-gray-200 border-l-[3px] border-l-[#001f3f] bg-white pl-4 pr-4 py-4 hover:border-gray-300 hover:shadow-sm transition-all active:scale-[0.995] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
-                                            >
-                                                <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide mb-2">
-                                                    <span className="bg-[#001f3f] text-white px-2 py-0.5 rounded-md">Top story</span>
-                                                    <span className="text-gray-600">{heroItem.category}</span>
-                                                    <span aria-hidden="true" className="text-gray-300">•</span>
-                                                    <span className="text-gray-600 truncate">{heroItem.source}</span>
-                                                </div>
-                                                <h3 className="text-lg md:text-[22px] font-bold text-gray-900 group-hover:text-[#001f3f] leading-tight tracking-tight">
-                                                    {heroItem.title}
-                                                </h3>
-                                                <p className="mt-2 text-sm text-gray-600 leading-relaxed line-clamp-2">
-                                                    {heroItem.contentSnippet}
-                                                </p>
-                                            </article>
-                                        )}
-                                        <div className="divide-y divide-gray-100">
-                                            {restItems.map((item, idx) => (
-                                                <NewsCard
-                                                    key={`${item.id}-${idx}`}
-                                                    item={item}
-                                                    onSelect={handleSelect}
-                                                    saved={bookmarkIds.includes(item.id)}
-                                                    onToggleSave={() => handleToggleBookmark(item)}
-                                                />
-                                            ))}
-                                        </div>
-
-                                        {totalPages > 1 && (
-                                            <nav aria-label="News pages" className="mt-6 flex flex-col gap-3 border-t border-gray-100 pt-5">
-                                                <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                                                    {getPageNumbers(safePage, totalPages).map((p, i) =>
-                                                        p === '…' ? (
-                                                            <span key={`e-${i}`} className="text-gray-400 px-1">…</span>
-                                                        ) : (
-                                                            <button
-                                                                key={p}
-                                                                onClick={() => handlePageChange(p)}
-                                                                aria-current={p === safePage ? 'page' : undefined}
-                                                                className={`min-w-[32px] min-h-[32px] px-2 rounded-md text-[13px] font-semibold whitespace-nowrap transition-all active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] ${p === safePage
-                                                                    ? 'bg-[#001f3f] text-white'
-                                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                                                    }`}
-                                                            >
-                                                                {p}
-                                                            </button>
-                                                        )
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center justify-between">
-                                                    <button
-                                                        onClick={() => handlePageChange(Math.max(safePage - 1, 1))}
-                                                        disabled={safePage === 1}
-                                                        className="min-h-[32px] text-[11px] font-bold uppercase tracking-wide text-[#001f3f] disabled:text-gray-300 flex items-center gap-1.5 px-2 rounded-md whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
-                                                    >
-                                                        ← Prev
-                                                    </button>
-                                                    <span className="text-[11px] font-semibold text-gray-600 uppercase tracking-wide whitespace-nowrap">
-                                                        {safePage} / {totalPages}
-                                                    </span>
-                                                    <button
-                                                        onClick={() => handlePageChange(Math.min(safePage + 1, totalPages))}
-                                                        disabled={safePage === totalPages}
-                                                        className="min-h-[32px] text-[11px] font-bold uppercase tracking-wide text-[#001f3f] disabled:text-gray-300 flex items-center gap-1.5 px-2 rounded-md whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
-                                                    >
-                                                        Next →
-                                                    </button>
-                                                </div>
-                                            </nav>
-                                        )}
-                                    </>
-                                ) : (
-                                    <div className="py-14 text-center">
-                                        <p className="text-[13px] font-semibold uppercase tracking-wide text-gray-600 mb-4">
-                                            No articles found.
-                                        </p>
-                                        <button
-                                            onClick={() => {
-                                                setSearchQuery('');
-                                                setActiveCategory('All');
-                                            }}
-                                            className="min-h-[32px] text-[11px] font-bold uppercase tracking-wide px-4 py-1.5 border border-gray-300 rounded-md hover:border-[#001f3f] transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
-                                        >
-                                            Clear filters
-                                        </button>
-                                    </div>
-                                )}
+                                ))}
                             </div>
                         </div>
-                    </div>
-
-                    <aside className="space-y-4 lg:sticky lg:top-20">
-                        <div className="bg-white border border-gray-200 rounded-md p-3">
-                            <h3 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mb-1">
-                                Start with the brief
-                            </h3>
-                            <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
-                                2-minute AI catch-up across {counts.All || total} stories.
-                            </p>
-                            <div className="space-y-2">
+                    ) : error ? (
+                        <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-8 py-6">
+                            <div className="max-w-xl mx-auto text-center py-12 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-2xs">
+                                <p className="text-sm font-semibold text-slate-800 mb-4">{error}</p>
                                 <button
-                                    onClick={() => handleTabChange('brief')}
-                                    className="w-full min-h-[32px] text-[11px] font-bold uppercase tracking-wide border border-gray-200 text-[#001f3f] rounded-md hover:border-[#001f3f] hover:bg-gray-50 transition-colors whitespace-nowrap active:scale-[0.99]"
+                                    onClick={() => {
+                                        pageCache.current.clear();
+                                        loadPage(currentPage, activeCategory, debouncedQuery);
+                                    }}
+                                    className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-semibold hover:bg-slate-800 transition-colors"
                                 >
-                                    Read Daily Brief →
+                                    Retry
                                 </button>
                             </div>
                         </div>
-                        <div className="hidden lg:block bg-white border border-gray-200 rounded-md p-3">
-                            <h3 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mb-3">
-                                Trending now
-                            </h3>
-                            <TrendingRows items={trendingWithoutHero} onSelect={handleSelect} />
-                        </div>
-                    </aside>
-                </div>
-            ) : activeTab === 'trending' ? (
-                <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
-                    <div className="bg-white border border-gray-200 rounded-md p-3 min-w-0">
-                        <h2 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mb-2 px-1">
-                            Trending now
-                        </h2>
-                        {trending.length > 0 ? (
-                            <div className="divide-y divide-gray-100">
-                                {trending.map((t, i) => (
-                                    <button
-                                        key={`${t.id}-${i}`}
-                                        onClick={() => handleSelect(t)}
-                                        className="w-full text-left flex gap-3 py-3 first:pt-1 last:pb-1 group hover:bg-gray-50 rounded-md px-1 -mx-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
-                                    >
-                                        <span className="text-2xl font-bold text-gray-200 group-hover:text-[#001f3f] leading-none shrink-0 w-8 transition-colors">
-                                            {i + 1}
-                                        </span>
-                                        <span className="min-w-0 flex-1">
-                                            <span className="block text-[15px] font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-[#001f3f]">
-                                                {t.title}
-                                            </span>
-                                            <span className="block mt-1 text-[11px] font-semibold text-gray-600 uppercase tracking-wide truncate">
-                                                {t.source} • {t.category}
-                                            </span>
-                                        </span>
-                                    </button>
-                                ))}
+                    ) : (
+                        <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-8 py-6">
+                            <div className="max-w-5xl mx-auto w-full space-y-6">
+                                {activeTab === 'brief' ? (
+                                    <DailyDigest />
+                                ) : activeTab === 'latest' ? (
+                                    <div className="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-5 items-start">
+                                        <div className="min-w-0">
+                                            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs">
+                                                <div className="md:sticky md:top-0 z-30 bg-white/95 md:backdrop-blur-sm -mx-2 px-2 pt-1 pb-3 border-b border-slate-100 mb-3">
+                                                    <SearchBar value={searchQuery} onChange={(v) => { setSearchQuery(v); setCurrentPage(1); }} />
+                                                    <CategoryFilter
+                                                        activeCategory={activeCategory}
+                                                        onCategoryChange={(c) => { setActiveCategory(c); setCurrentPage(1); }}
+                                                        counts={counts}
+                                                    />
+                                                </div>
+
+                                                {isFiltering && (
+                                                    <p className="mb-3 text-xs font-semibold text-slate-600 flex items-center justify-between" role="status">
+                                                        <span>
+                                                            {total} result{total === 1 ? '' : 's'}
+                                                            {searchQuery.trim() && <> for &ldquo;{searchQuery.trim()}&rdquo;</>}
+                                                            {activeCategory !== 'All' && <> in {activeCategory}</>}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => {
+                                                                setSearchQuery('');
+                                                                setActiveCategory('All');
+                                                            }}
+                                                            className="text-xs font-semibold text-blue-600 hover:text-blue-800 underline underline-offset-2"
+                                                        >
+                                                            Clear filters
+                                                        </button>
+                                                    </p>
+                                                )}
+
+                                                <div className="mt-2">
+                                                    {pageLoading && items.length > 0 && (
+                                                        <div className="mb-3 rounded-xl border border-slate-100 bg-slate-50 px-3.5 py-2.5">
+                                                            <LoadingMessage stages={['Loading page…']} intervalMs={1200} />
+                                                        </div>
+                                                    )}
+                                                    {paginatedNews.length > 0 ? (
+                                                        <>
+                                                            {heroItem && (
+                                                                <article
+                                                                    onClick={() => handleSelect(heroItem)}
+                                                                    onKeyDown={(e) => {
+                                                                        if (e.key === 'Enter') handleSelect(heroItem);
+                                                                    }}
+                                                                    tabIndex={0}
+                                                                    className="group cursor-pointer mb-5 rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50/50 to-slate-100/60 p-4 sm:p-5 hover:border-slate-300 hover:shadow-sm transition-all active:scale-[0.995] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+                                                                >
+                                                                    <div className="flex items-center gap-2 flex-wrap mb-2.5 text-xs">
+                                                                        <span className="bg-slate-900 text-white font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs text-[11px]">
+                                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                                                            Top Story
+                                                                        </span>
+                                                                        <span className="font-semibold text-slate-700">{heroItem.category}</span>
+                                                                        <span aria-hidden="true" className="text-slate-300">•</span>
+                                                                        <span className="text-slate-500 font-medium truncate">{heroItem.source}</span>
+                                                                    </div>
+                                                                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 group-hover:text-blue-700 leading-tight tracking-tight mb-2 transition-colors">
+                                                                        {heroItem.title}
+                                                                    </h3>
+                                                                    <p className="text-sm text-slate-600 leading-relaxed line-clamp-3">
+                                                                        {heroItem.contentSnippet}
+                                                                    </p>
+                                                                </article>
+                                                            )}
+                                                            <div className="divide-y divide-slate-100">
+                                                                {restItems.map((item, idx) => (
+                                                                    <NewsCard
+                                                                        key={`${item.id}-${idx}`}
+                                                                        item={item}
+                                                                        onSelect={handleSelect}
+                                                                        saved={bookmarkIds.includes(item.id)}
+                                                                        onToggleSave={() => handleToggleBookmark(item)}
+                                                                    />
+                                                                ))}
+                                                            </div>
+
+                                                            {totalPages > 1 && (
+                                                                <nav aria-label="News pages" className="mt-6 flex flex-col gap-3 border-t border-slate-100 pt-5">
+                                                                    <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                                                                        {getPageNumbers(safePage, totalPages).map((p, i) =>
+                                                                            p === '…' ? (
+                                                                                <span key={`e-${i}`} className="text-slate-400 px-1 text-xs">…</span>
+                                                                            ) : (
+                                                                                <button
+                                                                                    key={p}
+                                                                                    onClick={() => handlePageChange(p)}
+                                                                                    aria-current={p === safePage ? 'page' : undefined}
+                                                                                    className={`min-w-[34px] min-h-[34px] px-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 ${
+                                                                                        p === safePage
+                                                                                            ? 'bg-slate-900 text-white shadow-2xs'
+                                                                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                                                    }`}
+                                                                                >
+                                                                                    {p}
+                                                                                </button>
+                                                                            )
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="flex items-center justify-between text-xs">
+                                                                        <button
+                                                                            onClick={() => handlePageChange(Math.max(safePage - 1, 1))}
+                                                                            disabled={safePage === 1}
+                                                                            className="px-3 py-1.5 rounded-lg font-semibold text-slate-700 disabled:text-slate-300 hover:bg-slate-100 transition-colors"
+                                                                        >
+                                                                            ← Prev
+                                                                        </button>
+                                                                        <span className="text-xs font-medium text-slate-500">
+                                                                            Page {safePage} of {totalPages}
+                                                                        </span>
+                                                                        <button
+                                                                            onClick={() => handlePageChange(Math.min(safePage + 1, totalPages))}
+                                                                            disabled={safePage === totalPages}
+                                                                            className="px-3 py-1.5 rounded-lg font-semibold text-slate-700 disabled:text-slate-300 hover:bg-slate-100 transition-colors"
+                                                                        >
+                                                                            Next →
+                                                                        </button>
+                                                                    </div>
+                                                                </nav>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <div className="py-14 text-center">
+                                                            <p className="text-sm font-semibold text-slate-700 mb-3">
+                                                                No articles found.
+                                                            </p>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setSearchQuery('');
+                                                                    setActiveCategory('All');
+                                                                }}
+                                                                className="text-xs font-semibold px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl transition-colors"
+                                                            >
+                                                                Reset all filters
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <aside className="space-y-4 lg:sticky lg:top-0">
+                                            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs">
+                                                <div className="flex items-center gap-2 mb-1.5">
+                                                    <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+                                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
+                                                        Start with the brief
+                                                    </h3>
+                                                </div>
+                                                <p className="text-xs text-slate-600 leading-relaxed mb-3">
+                                                    2-minute AI catch-up across {counts.All || total} indexed stories.
+                                                </p>
+                                                <button
+                                                    onClick={() => handleTabChange('brief')}
+                                                    className="w-full py-2 px-3 text-xs font-semibold border border-slate-200 text-slate-800 rounded-xl hover:bg-slate-50 hover:border-slate-800 transition-all text-center block"
+                                                >
+                                                    Read Daily Brief →
+                                                </button>
+                                            </div>
+                                            <div className="hidden lg:block bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs">
+                                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3">
+                                                    Trending today
+                                                </h3>
+                                                <TrendingRows items={trendingWithoutHero} onSelect={handleSelect} />
+                                            </div>
+                                        </aside>
+                                    </div>
+                                ) : activeTab === 'trending' ? (
+                                    <div className="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-5 items-start">
+                                        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs min-w-0">
+                                            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+                                                <svg className="w-4 h-4 text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                                </svg>
+                                                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900">
+                                                    Trending Kenya Stories
+                                                </h2>
+                                            </div>
+                                            {trending.length > 0 ? (
+                                                <div className="divide-y divide-slate-100">
+                                                    {trending.map((t, i) => (
+                                                        <button
+                                                            key={`${t.id}-${i}`}
+                                                            onClick={() => handleSelect(t)}
+                                                            className="w-full text-left flex items-start gap-3 py-3.5 first:pt-1 last:pb-1 group hover:bg-slate-50/80 rounded-xl px-2 -mx-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+                                                        >
+                                                            <span className="w-7 h-7 rounded-lg bg-slate-100 group-hover:bg-slate-900 group-hover:text-white flex items-center justify-center text-xs font-bold text-slate-500 shrink-0 transition-colors">
+                                                                {i + 1}
+                                                            </span>
+                                                            <span className="min-w-0 flex-1">
+                                                                <span className="block text-sm sm:text-base font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:text-blue-700 transition-colors">
+                                                                    {t.title}
+                                                                </span>
+                                                                <span className="block mt-1 text-[11px] font-medium text-slate-500 truncate">
+                                                                    {t.source} • {t.category}
+                                                                </span>
+                                                            </span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <p className="py-10 text-center text-xs font-medium text-slate-500">
+                                                    No trending stories right now.
+                                                </p>
+                                            )}
+                                        </div>
+                                        <aside className="space-y-4 lg:sticky lg:top-0">
+                                            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs">
+                                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-1.5">
+                                                    Catch up fast
+                                                </h3>
+                                                <p className="text-xs text-slate-600 leading-relaxed mb-3">
+                                                    2-minute AI catch-up across {counts.All || total} indexed stories.
+                                                </p>
+                                                <button
+                                                    onClick={() => handleTabChange('brief')}
+                                                    className="w-full py-2 px-3 text-xs font-semibold border border-slate-200 text-slate-800 rounded-xl hover:bg-slate-50 hover:border-slate-800 transition-all text-center block"
+                                                >
+                                                    Read Daily Brief →
+                                                </button>
+                                            </div>
+                                        </aside>
+                                    </div>
+                                ) : (
+                                    <div className="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-5 items-start">
+                                        <div className="min-w-0 space-y-4">
+                                            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs">
+                                                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3 pb-2 border-b border-slate-100 flex items-center justify-between">
+                                                    <span>Bookmarked Stories</span>
+                                                    <span className="bg-slate-100 px-2 py-0.5 rounded-full text-slate-600 text-[11px]">
+                                                        {savedItems.length}
+                                                    </span>
+                                                </h2>
+                                                {savedItems.length > 0 ? (
+                                                    <div className="divide-y divide-slate-100">
+                                                        {savedItems.map((item) => (
+                                                            <NewsCard
+                                                                key={item.id}
+                                                                item={item}
+                                                                onSelect={handleSelect}
+                                                                saved
+                                                                onToggleSave={() => handleToggleBookmark(item)}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <p className="py-8 text-center text-xs text-slate-500">
+                                                        Nothing saved yet. Tap the bookmark icon on any story to save it for later.
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs">
+                                                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3 pb-2 border-b border-slate-100">
+                                                    Recently Read
+                                                </h2>
+                                                {recentItems.length > 0 ? (
+                                                    <div className="divide-y divide-slate-100">
+                                                        {recentItems.map((item) => (
+                                                            <NewsCard
+                                                                key={item.id}
+                                                                item={item}
+                                                                onSelect={handleSelect}
+                                                                saved={bookmarkIds.includes(item.id)}
+                                                                onToggleSave={() => handleToggleBookmark(item)}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <p className="py-6 text-center text-sm text-gray-600">
+                                                        Stories you open will appear here.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <aside className="space-y-4 lg:sticky lg:top-0">
+                                            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs">
+                                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-1.5">
+                                                    Start with the brief
+                                                </h3>
+                                                <p className="text-xs text-slate-600 leading-relaxed mb-3">
+                                                    2-minute AI catch-up across {counts.All || total} stories.
+                                                </p>
+                                                <button
+                                                    onClick={() => handleTabChange('brief')}
+                                                    className="w-full py-2 px-3 text-xs font-semibold border border-slate-200 text-slate-800 rounded-xl hover:bg-slate-50 hover:border-slate-800 transition-all text-center block"
+                                                >
+                                                    Read Daily Brief →
+                                                </button>
+                                            </div>
+                                        </aside>
+                                    </div>
+                                )}
                             </div>
-                        ) : (
-                            <p className="py-10 text-center text-[13px] font-semibold uppercase tracking-wide text-gray-600">
-                                No trending stories yet.
-                            </p>
-                        )}
-                    </div>
-                    <aside className="space-y-4 lg:sticky lg:top-20">
-                        <div className="bg-white border border-gray-200 rounded-md p-3">
-                            <h3 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mb-1">
-                                Start with the brief
-                            </h3>
-                            <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
-                                2-minute AI catch-up across {counts.All || total} stories.
-                            </p>
-                            <button
-                                onClick={() => handleTabChange('brief')}
-                                className="w-full min-h-[32px] text-[11px] font-bold uppercase tracking-wide border border-gray-200 text-[#001f3f] rounded-md hover:border-[#001f3f] hover:bg-gray-50 transition-colors whitespace-nowrap active:scale-[0.99]"
-                            >
-                                Read Daily Brief →
-                            </button>
                         </div>
-                    </aside>
+                    )}
                 </div>
-            ) : (
-                <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-4 items-start">
-                    <div className="min-w-0 space-y-4">
-                        <div className="bg-white border border-gray-200 rounded-md p-3">
-                            <h2 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mb-2 px-1">
-                                Bookmarked ({savedItems.length})
-                            </h2>
-                            {savedItems.length > 0 ? (
-                                <div className="divide-y divide-gray-100">
-                                    {savedItems.map((item) => (
-                                        <NewsCard
-                                            key={item.id}
-                                            item={item}
-                                            onSelect={handleSelect}
-                                            saved
-                                            onToggleSave={() => handleToggleBookmark(item)}
-                                        />
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="py-6 text-center text-sm text-gray-600">
-                                    Nothing saved yet. Tap the bookmark on any story to keep it here.
-                                </p>
-                            )}
-                        </div>
-                        <div className="bg-white border border-gray-200 rounded-md p-3">
-                            <h2 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mb-2 px-1">
-                                Recently read
-                            </h2>
-                            {recentItems.length > 0 ? (
-                                <div className="divide-y divide-gray-100">
-                                    {recentItems.map((item) => (
-                                        <NewsCard
-                                            key={item.id}
-                                            item={item}
-                                            onSelect={handleSelect}
-                                            saved={bookmarkIds.includes(item.id)}
-                                            onToggleSave={() => handleToggleBookmark(item)}
-                                        />
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="py-6 text-center text-sm text-gray-600">
-                                    Stories you open will appear here.
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                    <aside className="space-y-4 lg:sticky lg:top-20">
-                        <div className="bg-white border border-gray-200 rounded-md p-3">
-                            <h3 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mb-1">
-                                Start with the brief
-                            </h3>
-                            <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
-                                2-minute AI catch-up across {counts.All || total} stories.
-                            </p>
-                            <button
-                                onClick={() => handleTabChange('brief')}
-                                className="w-full min-h-[32px] text-[11px] font-bold uppercase tracking-wide border border-gray-200 text-[#001f3f] rounded-md hover:border-[#001f3f] hover:bg-gray-50 transition-colors whitespace-nowrap active:scale-[0.99]"
-                            >
-                                Read Daily Brief →
-                            </button>
-                        </div>
-                    </aside>
-                </div>
-            )}
-            <MobileTabBar activeTab={activeTab} onChange={handleTabChange} />
+            </div>
         </div>
     );
 }

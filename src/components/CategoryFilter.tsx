@@ -11,7 +11,11 @@ type CategoryFilterProps = {
 export default function CategoryFilter({ activeCategory, onCategoryChange, counts }: CategoryFilterProps) {
     return (
         <div className="relative">
-            <div className="flex items-center gap-2 overflow-x-auto py-1 -mx-1 px-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Filter by category">
+            <div
+                className="flex items-center gap-1.5 overflow-x-auto py-1 -mx-1 px-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                role="tablist"
+                aria-label="Filter news by category"
+            >
                 {CATEGORIES.map((category) => {
                     const count = counts?.[category];
                     const isActive = activeCategory === category;
@@ -21,14 +25,19 @@ export default function CategoryFilter({ activeCategory, onCategoryChange, count
                             role="tab"
                             aria-selected={isActive}
                             onClick={() => onCategoryChange(category)}
-                            className={`shrink-0 whitespace-nowrap min-h-[36px] px-4 rounded-md text-[11px] font-semibold uppercase tracking-wide transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2 ${isActive
-                                ? 'bg-[#001f3f] text-white shadow-md shadow-blue-900/20'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
-                                }`}
+                            className={`shrink-0 whitespace-nowrap px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 ${
+                                isActive
+                                    ? 'bg-slate-900 text-white shadow-xs'
+                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900'
+                            }`}
                         >
                             {category}
                             {typeof count === 'number' && (
-                                <span className={`ml-1.5 text-[11px] font-semibold ${isActive ? 'text-white/70' : 'text-gray-400'}`}>
+                                <span
+                                    className={`ml-1.5 text-[11px] font-medium ${
+                                        isActive ? 'text-slate-300' : 'text-slate-400'
+                                    }`}
+                                >
                                     {count}
                                 </span>
                             )}
@@ -36,7 +45,7 @@ export default function CategoryFilter({ activeCategory, onCategoryChange, count
                     );
                 })}
             </div>
-            {/* Fades the right edge so it is obvious the row scrolls sideways */}
+            {/* Fades the right edge so users perceive the horizontal scroll */}
             <div
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white to-transparent sm:hidden"

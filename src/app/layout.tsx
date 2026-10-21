@@ -1,13 +1,19 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
-import Navbar from "@/components/Navbar";
 import SwRegister from "@/components/SwRegister";
 import NotifyPrompt from "@/components/NotifyPrompt";
+import { Plus_Jakarta_Sans } from "next/font/google";
+
+const sans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-sans",
+});
 
 export const metadata: Metadata = {
-  title: "Jemanews | Minimal Kenyan News",
-  description: "A clean, minimal news aggregator for Kenya",
+  title: "Jemanews | Kenyan News Intelligence",
+  description: "A clean, production-grade news aggregator and AI assistant for Kenya",
   manifest: "/manifest.json",
   appleWebApp: {
     title: "Jemanews",
@@ -20,8 +26,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#001f3f",
+  themeColor: "#0f172a",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
   viewportFit: "cover",
+  interactiveWidget: "resizes-content",
 };
 
 // Dev only: a service worker registered by an older build can pin stale
@@ -35,8 +45,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en-US">
-      <body className="font-sans antialiased selection:bg-blue-100 notranslate text-[15px] leading-normal pb-[calc(56px+env(safe-area-inset-bottom))] md:pb-0">
+    <html lang="en-US" className={sans.variable}>
+      <body className="font-sans antialiased selection:bg-slate-200 text-slate-800 bg-[#f8fafc] notranslate text-[15px] leading-normal h-dvh flex flex-col overflow-hidden">
         <meta name="application-name" content="Jemanews" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -50,20 +60,11 @@ export default function RootLayout({
           <script dangerouslySetInnerHTML={{ __html: DEV_SW_RESET }} />
         )}
 
-        <Navbar />
         <SwRegister />
         <NotifyPrompt />
-        <main className="min-h-screen bg-[#f4f5f7]">
+        <main className="flex-1 min-h-0 flex flex-col h-full w-full overflow-hidden bg-[#f8fafc]">
           {children}
         </main>
-        <footer className="py-4 border-t border-gray-100 bg-white">
-          <div className="mx-auto w-full max-w-6xl px-4 text-center">
-            <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">
-              Built for Kenya
-              <span className="hidden sm:inline"> · {new Date().getFullYear()}</span>
-            </p>
-          </div>
-        </footer>
         <Analytics />
       </body>
     </html>
