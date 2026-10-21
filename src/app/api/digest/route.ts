@@ -24,7 +24,7 @@ export async function GET(req: Request) {
     }
 
     // Single-flight: if another instance is already building, poll briefly
-    // then ask the client to retry instead of burning AI credits in parallel.
+    // then tell the client to keep waiting instead of burning AI credits.
     const locked = await tryAcquireDigestLock();
     if (!locked) {
         for (let i = 0; i < 5; i++) {
@@ -33,8 +33,8 @@ export async function GET(req: Request) {
             if (retry) return NextResponse.json({ ...retry.data, cached: true });
         }
         return NextResponse.json(
-            { error: 'Brief is being generated. Try again in a few seconds.' },
-            { status: 202 }
+            { pending: true, error: 'Brief is being generated. This usually takes a few seconds.' },
+            { status: 202, headers: { 'Retry-After': '3' } }
         );
     }
 

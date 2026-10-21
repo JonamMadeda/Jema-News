@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import LoadingMessage from './LoadingMessage';
 import { setAppTab } from './Navbar';
@@ -30,8 +30,21 @@ export default function DailyDigest() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
+    const aliveRef = useRef(true);
+    // Guards against polling forever if the brief never lands.
+    const attemptsRef = useRef(0);
+    // Keeps the effect free of a `load` dependency while always calling the latest.
+    const loadRef = useRef<(force?: boolean) => void>(() => {});
+
+    useEffect(() => {
+        aliveRef.current = true;
+        return () => {
+            aliveRef.current = false;
+        };
+    }, []);
 
     async function load(force = false) {
+        if (!aliveRef.current) return;
         setLoading(true);
         setError(null);
         // Client cache (survives reloads + server cold starts) mirrors the 3h server TTL
@@ -53,6 +66,19 @@ export default function DailyDigest() {
         try {
             const res = await fetch('/api/digest');
             const json = await res.json();
+            // 202 means another instance holds the single-flight lock and is
+            // building the brief right now — keep polling instead of erroring.
+            if (res.status === 202) {
+                attemptsRef.current += 1;
+                if (attemptsRef.current > 10) {
+                    setError(json?.error || 'The brief is taking longer than usual. Try again shortly.');
+                    setLoading(false);
+                    return;
+                }
+                await new Promise((r) => setTimeout(r, 3000));
+                if (aliveRef.current) await load(force);
+                return;
+            }
             if (!res.ok) throw new Error(json?.error || 'Failed to load digest');
             setData(json);
             try {
@@ -64,15 +90,21 @@ export default function DailyDigest() {
                 // storage unavailable — non-fatal
             }
         } catch (err) {
+            if (!aliveRef.current) return;
             setError(err instanceof Error ? err.message : 'Something went wrong');
         } finally {
-            setLoading(false);
+            if (aliveRef.current) setLoading(false);
         }
     }
 
+    loadRef.current = load;
+
     useEffect(() => {
-        load();
-        const onRefresh = () => load(true);
+        loadRef.current();
+        const onRefresh = () => {
+            attemptsRef.current = 0;
+            loadRef.current(true);
+        };
         window.addEventListener('jema:digest-refresh', onRefresh);
         return () => window.removeEventListener('jema:digest-refresh', onRefresh);
     }, []);
