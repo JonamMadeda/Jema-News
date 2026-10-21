@@ -47,7 +47,7 @@ export default function Navbar() {
     return (
         <header className="border-b border-gray-100 sticky top-0 bg-white/90 backdrop-blur-sm z-50">
             <div className="mx-auto w-full max-w-6xl px-4 h-12 flex items-center justify-between gap-3">
-                <Link href="/" className="flex items-center gap-2 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] rounded-md">
+                <Link href="/" className="flex items-center gap-2 shrink-0 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] rounded-md">
                     <span className="w-7 h-7 bg-[#001f3f] rounded-md flex items-center justify-center shrink-0">
                         <span className={`${brand.className} text-white font-bold text-[14px] leading-none tracking-tight`}>J</span>
                     </span>

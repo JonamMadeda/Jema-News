@@ -84,7 +84,8 @@ function MobileTabBar({ activeTab, onChange }: { activeTab: Tab; onChange: (tab:
                             key={t.id}
                             onClick={() => onChange(t.id)}
                             aria-current={active ? 'page' : undefined}
-                            className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 min-h-[56px] pt-2 pb-1 text-[10px] font-bold uppercase tracking-wide transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#001f3f] ${active ? 'text-[#001f3f]' : 'text-gray-500 hover:text-gray-900'
+                            aria-label={t.label}
+                            className={`relative flex-1 flex flex-col items-center justify-center gap-1 min-h-[60px] pt-2 pb-1.5 text-[11px] font-bold uppercase tracking-wide whitespace-nowrap transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#001f3f] ${active ? 'text-[#001f3f]' : 'text-gray-600 hover:text-gray-900'
                                 }`}
                         >
                             <span
@@ -416,6 +417,12 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
     const showHero = !isFiltering && safePage === 1 && paginatedNews.length > 0;
     const heroItem = showHero ? paginatedNews[0] : null;
     const restItems = showHero ? paginatedNews.slice(1) : paginatedNews;
+    // The feed counter only means something on the tabs that list the feed.
+    const showFeedCount = activeTab === 'latest' || activeTab === 'trending';
+    // The hero is already shown above the feed, so drop it from the sidebar.
+    const trendingWithoutHero = heroItem
+        ? trending.filter((t) => t.id !== heroItem.id)
+        : trending;
 
     function handleTabChange(tab: Tab) {
         setActiveTab(tab);
@@ -555,20 +562,12 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                     {toast}
                 </div>
             )}
-            <div className="md:hidden shrink-0 mb-1.5 flex items-center justify-between gap-2">
-                <p suppressHydrationWarning className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-                    {formattedDate}
-                </p>
-                <span className="bg-gray-100 px-2 py-0.5 rounded-md text-[11px] font-semibold uppercase tracking-wide text-gray-600 whitespace-nowrap">
-                    {total} • Live
-                </span>
-            </div>
-            <div className="hidden md:flex shrink-0 items-center justify-between gap-2 mb-3 border-b border-gray-100 pb-2">
+            <div className="flex shrink-0 items-center gap-2 mb-2 md:mb-3 md:pb-2 md:border-b md:border-gray-100">
                 <div
                     role="tablist"
                     aria-label="Switch between chat, brief, latest, trending and saved"
                     onKeyDown={handleTabListKey}
-                    className="flex w-full min-w-0 overflow-x-auto sm:overflow-visible sm:inline-flex sm:w-auto bg-white border border-gray-200 p-0.5 rounded-md gap-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                    className="hidden md:inline-flex shrink-0 bg-white border border-gray-200 p-0.5 rounded-md gap-0.5"
                 >
                     {TABS.map((t) => (
                         <button
@@ -577,7 +576,7 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                             aria-selected={activeTab === t.id}
                             tabIndex={activeTab === t.id ? 0 : -1}
                             onClick={() => handleTabChange(t.id)}
-                            className={`min-h-[32px] rounded-md px-2 sm:px-4 text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2 active:scale-[0.98] flex-1 sm:flex-none ${activeTab === t.id
+                            className={`min-h-[32px] rounded-md px-4 text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2 active:scale-[0.98] ${activeTab === t.id
                                 ? 'bg-[#001f3f] text-white shadow-md shadow-blue-900/20'
                                 : 'text-gray-600 hover:text-gray-900'
                                 }`}
@@ -586,18 +585,21 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                         </button>
                     ))}
                 </div>
-                <div className="hidden md:flex items-center gap-2 shrink-0 min-w-0">
-                    <span suppressHydrationWarning className="hidden md:block text-[11px] font-bold uppercase tracking-wide text-gray-900 truncate">
-                        {formattedDate}
+                <span
+                    suppressHydrationWarning
+                    className="md:ml-auto text-[11px] font-semibold uppercase tracking-wide text-gray-600 md:font-bold md:text-gray-900 truncate"
+                >
+                    {formattedDate}
+                </span>
+                {showFeedCount && (
+                    <span className="ml-auto md:ml-0 bg-gray-100 px-2 py-0.5 rounded-md text-[11px] font-semibold uppercase tracking-wide text-gray-600 whitespace-nowrap">
+                        {total} stories
                     </span>
-                    <span className="bg-gray-100 px-2 py-0.5 rounded-md text-[11px] font-semibold uppercase tracking-wide text-gray-600 whitespace-nowrap">
-                        {total} • Live
-                    </span>
-                </div>
+                )}
             </div>
 
             {activeTab === 'brief' ? (
-                <div className="mx-auto w-full max-w-3xl">
+                <div className="mx-auto w-full max-w-3xl min-h-[60vh]">
                     <DailyDigest />
                 </div>
             ) : activeTab === 'ask' ? (
@@ -761,7 +763,7 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                             <h3 className="text-[11px] font-bold uppercase tracking-wide text-[#001f3f] mb-3">
                                 Trending now
                             </h3>
-                            <TrendingRows items={trending} onSelect={handleSelect} />
+                            <TrendingRows items={trendingWithoutHero} onSelect={handleSelect} />
                         </div>
                     </aside>
                 </div>

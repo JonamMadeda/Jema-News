@@ -161,12 +161,27 @@ export default function AskNews() {
                     aria-live="polite"
                 >
                     {messages.length === 0 && !loading && (
-                        <div className="flex items-end gap-2">
-                            <Avatar />
-                            <div className="max-w-[85%] bg-gray-100 text-gray-800 text-sm leading-relaxed rounded-xl rounded-bl-sm px-3.5 py-2.5">
-                                Hi — ask me anything about today&apos;s news in Kenya, or tap a
-                                suggestion below. You&apos;ll get one short answer built from the
-                                latest headlines.
+                        <div className="h-full flex flex-col justify-center py-6">
+                            <div className="flex items-end gap-2">
+                                <Avatar />
+                                <div className="max-w-[85%] bg-gray-100 text-gray-800 text-sm leading-relaxed rounded-xl rounded-bl-sm px-3.5 py-2.5">
+                                    Hi — ask me anything about today&apos;s news in Kenya. I answer
+                                    from the latest headlines only, so nothing is invented.
+                                </div>
+                            </div>
+                            <p className="mt-5 mb-2 text-[11px] font-bold uppercase tracking-wide text-gray-400">
+                                Try one of these
+                            </p>
+                            <div className="grid sm:grid-cols-2 gap-2">
+                                {PRESETS.slice(0, 4).map((p) => (
+                                    <button
+                                        key={p}
+                                        onClick={() => ask(p)}
+                                        className="text-left min-h-[44px] px-3 py-2 rounded-md border border-gray-200 text-[13px] font-medium text-gray-700 hover:border-[#001f3f] hover:text-[#001f3f] hover:bg-gray-50 transition-colors active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
+                                    >
+                                        {p}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     )}
@@ -233,21 +248,23 @@ export default function AskNews() {
                 </div>
 
                 <div className="shrink-0 border-t border-gray-100 px-3 py-2.5">
-                    <div
-                        className="flex gap-2 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                        aria-label="Suggested questions"
-                    >
-                        {PRESETS.map((p) => (
-                            <button
-                                key={p}
-                                onClick={() => ask(p)}
-                                disabled={loading}
-                                className="shrink-0 whitespace-nowrap min-h-[32px] px-3 rounded-md border border-gray-200 text-[11px] font-bold uppercase tracking-wide text-[#001f3f] hover:border-[#001f3f] hover:bg-gray-50 transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
-                            >
-                                {p}
-                            </button>
-                        ))}
-                    </div>
+                    {messages.length > 0 && (
+                        <div
+                            className="flex gap-2 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                            aria-label="Suggested questions"
+                        >
+                            {PRESETS.map((p) => (
+                                <button
+                                    key={p}
+                                    onClick={() => ask(p)}
+                                    disabled={loading}
+                                    className="shrink-0 whitespace-nowrap min-h-[32px] px-3 rounded-md border border-gray-200 text-[11px] font-bold uppercase tracking-wide text-[#001f3f] hover:border-[#001f3f] hover:bg-gray-50 transition-colors active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f]"
+                                >
+                                    {p}
+                                </button>
+                            ))}
+                        </div>
+                    )}
 
                     <form
                         onSubmit={(e) => {

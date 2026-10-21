@@ -50,7 +50,7 @@ export default function NewsCard({ item, onSelect, saved = false, onToggleSave }
                                 aria-label={saved ? 'Remove bookmark' : 'Bookmark this story'}
                                 aria-pressed={saved}
                                 title={saved ? 'Saved' : 'Save'}
-                                className={`ml-auto w-8 h-8 shrink-0 inline-flex items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] ${saved ? 'text-[#001f3f]' : 'text-gray-300 hover:text-[#001f3f]'}`}
+                                className={`relative ml-auto w-8 h-8 shrink-0 inline-flex items-center justify-center rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] after:absolute after:inset-[-6px] after:content-[''] ${saved ? 'text-[#001f3f]' : 'text-gray-300 hover:text-[#001f3f]'}`}
                             >
                                 <svg className="w-4 h-4" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />

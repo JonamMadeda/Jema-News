@@ -56,10 +56,11 @@ export default function RootLayout({
         <main className="min-h-screen bg-[#f4f5f7]">
           {children}
         </main>
-        <footer className="py-8 border-t border-gray-100 bg-white">
+        <footer className="py-4 border-t border-gray-100 bg-white">
           <div className="mx-auto w-full max-w-6xl px-4 text-center">
-            <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">
-              Built for Kenya · {new Date().getFullYear()}
+            <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">
+              Built for Kenya
+              <span className="hidden sm:inline"> · {new Date().getFullYear()}</span>
             </p>
           </div>
         </footer>
