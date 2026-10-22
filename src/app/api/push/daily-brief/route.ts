@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { hasAiProvider } from '@/lib/ai';
 import { buildFreshDigest } from '@/lib/digest';
 import { setDigest } from '@/lib/digestCache';
 import { sendBriefPush } from '@/lib/push';
@@ -19,12 +20,12 @@ export async function GET(req: Request) {
     if (!authorized(req)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    if (!process.env.OPENROUTER_API_KEY) {
+    if (!hasAiProvider()) {
         return NextResponse.json({ error: 'AI not configured' }, { status: 500 });
     }
 
     try {
-        const data = await buildFreshDigest(process.env.OPENROUTER_API_KEY);
+        const data = await buildFreshDigest();
         await setDigest(data);
 
         const firstHeadline =

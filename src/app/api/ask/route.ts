@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { completeWithFallback } from '@/lib/ai';
+import { completeWithFallback, hasAiProvider } from '@/lib/ai';
 import { fetchNews } from '@/lib/rss';
 import { checkRateLimit, clientKey, rateLimitedResponse } from '@/lib/rateLimit';
 
@@ -12,8 +12,7 @@ export async function POST(req: Request) {
     const rl = await checkRateLimit(clientKey(req, 'ask'), 12, 60);
     if (!rl.allowed) return rateLimitedResponse(rl.remaining);
 
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) {
+    if (!hasAiProvider()) {
         return NextResponse.json({ error: 'AI not configured' }, { status: 500 });
     }
 
@@ -47,7 +46,6 @@ export async function POST(req: Request) {
         }).format(new Date());
 
         const { text: answer, model } = await completeWithFallback(
-            apiKey,
             [
                 {
                     role: 'system',

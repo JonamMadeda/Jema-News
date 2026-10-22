@@ -3,8 +3,8 @@ import { completeWithFallback } from '@/lib/ai';
 import { CachedDigest } from '@/lib/digestCache';
 
 // Builds a fresh briefing (no cache read). Shared by /api/digest and the
-// daily push job so both use the same prompt and models.
-export async function buildFreshDigest(apiKey: string): Promise<CachedDigest> {
+// daily push job so both use the same prompt and provider fallback chain.
+export async function buildFreshDigest(): Promise<CachedDigest> {
     const news = await fetchNews();
     if (news.length === 0) {
         throw new Error('No news available to summarize');
@@ -16,7 +16,6 @@ export async function buildFreshDigest(apiKey: string): Promise<CachedDigest> {
         .join('\n');
 
     const { text: briefing, model } = await completeWithFallback(
-        apiKey,
         [
             {
                 role: 'system',

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { hasAiProvider } from '@/lib/ai';
 import { buildFreshDigest } from '@/lib/digest';
 import { getDigest, releaseDigestLock, setDigest, tryAcquireDigestLock } from '@/lib/digestCache';
 import { checkRateLimit, clientKey, rateLimitedResponse } from '@/lib/rateLimit';
@@ -9,11 +10,11 @@ export async function GET(req: Request) {
     const rl = await checkRateLimit(clientKey(req, 'digest'), 20, 60);
     if (!rl.allowed) return rateLimitedResponse(rl.remaining);
 
-    const apiKey = process.env.OPENROUTER_API_KEY;
-
-    if (!apiKey) {
+    if (!hasAiProvider()) {
         return NextResponse.json(
-            { error: 'OPENROUTER_API_KEY is not configured. Add it to .env.local.' },
+            {
+                error: 'AI is not configured. Set OPENROUTER_API_KEY, GROQ_API_KEY or GEMINI_API_KEY.',
+            },
             { status: 500 }
         );
     }
@@ -39,7 +40,7 @@ export async function GET(req: Request) {
     }
 
     try {
-        const data = await buildFreshDigest(apiKey);
+        const data = await buildFreshDigest();
         await setDigest(data);
         return NextResponse.json({ ...data, cached: false });
     } catch (error) {
