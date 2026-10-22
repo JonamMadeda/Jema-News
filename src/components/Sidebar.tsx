@@ -16,6 +16,14 @@ const TABS: { id: Tab; label: string }[] = [
     { id: 'saved', label: 'Saved Stories' },
 ];
 
+const MOBILE_TAB_LABELS: Record<Tab, string> = {
+    ask: 'Ask',
+    brief: 'Brief',
+    latest: 'Latest',
+    trending: 'Trending',
+    saved: 'Saved',
+};
+
 function TabIcon({ tab }: { tab: Tab }) {
     const props = {
         className: 'w-4 h-4 shrink-0',
@@ -68,16 +76,39 @@ function TabIcon({ tab }: { tab: Tab }) {
 type SidebarProps = {
     activeTab: Tab;
     onSelectTab: (tab: Tab) => void;
-    mobileOpen: boolean;
-    onCloseMobile: () => void;
 };
 
-export default function Sidebar({
-    activeTab,
-    onSelectTab,
-    mobileOpen,
-    onCloseMobile,
-}: SidebarProps) {
+export function MobileTabBar({ activeTab, onSelectTab }: SidebarProps) {
+    return (
+        <nav
+            aria-label="Main navigation"
+            className="md:hidden shrink-0 border-t border-slate-200/80 bg-white/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
+        >
+            <div className="mx-auto flex max-w-lg items-stretch justify-around">
+                {TABS.map((tab) => {
+                    const active = activeTab === tab.id;
+                    return (
+                        <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => onSelectTab(tab.id)}
+                            aria-current={active ? 'page' : undefined}
+                            className={`relative flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 text-[10px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-900 ${
+                                active ? 'text-slate-950' : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                        >
+                            {active && <span aria-hidden="true" className="absolute inset-x-5 top-0 h-0.5 rounded-full bg-slate-900" />}
+                            <TabIcon tab={tab.id} />
+                            <span className="max-w-full truncate">{MOBILE_TAB_LABELS[tab.id]}</span>
+                        </button>
+                    );
+                })}
+            </div>
+        </nav>
+    );
+}
+
+export default function Sidebar({ activeTab, onSelectTab }: SidebarProps) {
     const [today] = useState(() =>
         typeof window === 'undefined'
             ? ''
@@ -110,17 +141,6 @@ export default function Sidebar({
                         </span>
                     </div>
                 </div>
-
-                {/* Mobile close button */}
-                <button
-                    onClick={onCloseMobile}
-                    aria-label="Close menu"
-                    className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
             </div>
 
             {/* Navigation Tab Links */}
@@ -135,7 +155,6 @@ export default function Sidebar({
                             key={t.id}
                             onClick={() => {
                                 onSelectTab(t.id);
-                                onCloseMobile();
                             }}
                             aria-current={active ? 'page' : undefined}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all text-left ${
@@ -192,25 +211,8 @@ export default function Sidebar({
     );
 
     return (
-        <>
-            {/* Desktop persistent sidebar */}
-            <aside className="hidden md:flex flex-col w-60 lg:w-64 shrink-0 h-dvh border-r border-slate-200/80 sticky top-0 bg-white z-20">
-                {content}
-            </aside>
-
-            {/* Mobile drawer overlay */}
-            {mobileOpen && (
-                <div className="md:hidden fixed inset-0 z-50 flex">
-                    <div
-                        onClick={onCloseMobile}
-                        className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
-                        aria-hidden="true"
-                    />
-                    <div className="relative w-72 max-w-[85vw] h-full shadow-2xl z-10 animate-in slide-in-from-left duration-200">
-                        {content}
-                    </div>
-                </div>
-            )}
-        </>
+        <aside className="hidden md:flex flex-col w-60 lg:w-64 shrink-0 h-dvh border-r border-slate-200/80 sticky top-0 bg-white z-20">
+            {content}
+        </aside>
     );
 }

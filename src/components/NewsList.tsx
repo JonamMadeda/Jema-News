@@ -8,7 +8,7 @@ import CategoryFilter from './CategoryFilter';
 import NewsDetail from './NewsDetail';
 import DailyDigest from './DailyDigest';
 import AskNews from './AskNews';
-import Sidebar from './Sidebar';
+import Sidebar, { MobileTabBar } from './Sidebar';
 import LoadingMessage from './LoadingMessage';
 import { loadBookmarks, loadHistory, recordHistory, toggleBookmark } from '@/lib/storage';
 import { isAppTab, type Tab } from '@/lib/tabs';
@@ -95,7 +95,6 @@ function writeParams(patch: Partial<{ tab: Tab; cat: string; q: string; page: nu
 export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
     const initial = useRef(readParams(initialTab));
     const [activeTab, setActiveTab] = useState<Tab>(initial.current.tab);
-    const [mobileOpen, setMobileOpen] = useState(false);
     const [items, setItems] = useState<NewsItem[]>([]);
     const [total, setTotal] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
@@ -376,6 +375,10 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
         : trending;
 
     function handleTabChange(tab: Tab) {
+        if (selectedItemRef.current) {
+            setSelectedItem(null);
+            writeParams({ story: '' }, false);
+        }
         setActiveTab(tab);
         setAppTab(tab);
         setCurrentPage(1);
@@ -425,26 +428,12 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
     return (
         <div className="flex flex-col md:flex-row h-dvh w-full overflow-hidden bg-slate-50">
             {/* Left Sidebar */}
-            <Sidebar
-                activeTab={activeTab}
-                onSelectTab={handleTabChange}
-                mobileOpen={mobileOpen}
-                onCloseMobile={() => setMobileOpen(false)}
-            />
+            <Sidebar activeTab={activeTab} onSelectTab={handleTabChange} />
 
             {/* Main Content Area */}
-            <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden">
+            <div className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
                 {/* Mobile top header bar */}
                 <header className="md:hidden shrink-0 h-12 border-b border-slate-200/80 bg-white px-3 flex items-center justify-between z-10">
-                    <button
-                        onClick={() => setMobileOpen(true)}
-                        aria-label="Open menu"
-                        className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-700 hover:bg-slate-100 active:scale-95 transition-all"
-                    >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
                     <div className="flex items-center gap-2">
                         <span className="w-6 h-6 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold text-xs">
                             J
@@ -465,10 +454,6 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m21 21-4.3-4.3m2.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z" />
                             </svg>
                         </button>
-                        <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-slate-800 tracking-wide px-2.5 py-1.5 bg-slate-100 rounded-lg">
-                            <span className="w-1.5 h-1.5 rounded-full bg-slate-900" aria-hidden="true" />
-                            {TABS.find((t) => t.id === activeTab)?.label || 'Ask AI'}
-                        </span>
                     </div>
                 </header>
 
@@ -695,6 +680,7 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                                     )}
                                                 </div>
                                             </div>
+                                            <MobileTabBar activeTab={activeTab} onSelectTab={handleTabChange} />
                                         </div>
 
                                         <aside className="space-y-4 lg:sticky lg:top-0">
