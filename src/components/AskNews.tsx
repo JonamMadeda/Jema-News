@@ -13,11 +13,11 @@ type Message = {
 };
 
 const SUGGESTIONS = [
-    "What are the major headlines in Kenya today?",
-    "Latest business and economic news",
-    "Recent updates in national politics",
-    "Health and public sector developments",
-    "Education and university news",
+    'Top headlines today',
+    'Business and economy',
+    'Politics updates',
+    'Health and public sector',
+    'Education news',
 ];
 
 function stamp(): string {
@@ -134,9 +134,8 @@ export default function AskNews() {
             <div className="shrink-0 h-12 border-b border-slate-100 px-4 sm:px-6 flex items-center justify-between bg-white z-10">
                 <div className="flex items-center gap-2 text-xs font-semibold text-slate-800">
                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    <span>Kenya News Intelligence</span>
-                    <span className="text-slate-300 hidden sm:inline">•</span>
-                    <span className="text-slate-400 font-normal hidden sm:inline">Verified from today&apos;s headlines</span>
+                    <span>Ask AI</span>
+                    <span className="text-slate-400 font-normal hidden sm:inline">Today&apos;s headlines</span>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -169,18 +168,15 @@ export default function AskNews() {
             >
                 <div className="max-w-3xl mx-auto w-full space-y-6">
                     {messages.length === 0 && !loading && (
-                        <div className="py-12 sm:py-20 text-center max-w-xl mx-auto">
+                        <div className="py-12 sm:py-16 text-center max-w-xl mx-auto">
                             <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-800 mx-auto flex items-center justify-center mb-4">
                                 <svg className="w-5 h-5 text-slate-700" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M12 2L14.4 8.6L21 11L14.4 13.4L12 20L9.6 13.4L3 11L9.6 8.6L12 2Z" />
                                 </svg>
                             </div>
-                            <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">
-                                How can I help you today?
+                            <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-6">
+                                Ask about Kenya
                             </h2>
-                            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mb-8 max-w-md mx-auto">
-                                Ask any question about breaking events, politics, business, or public sector news in Kenya. Answers are synthesized strictly from verified current reports.
-                            </p>
 
                             <div className="space-y-2 text-left">
                                 {SUGGESTIONS.map((s) => (
@@ -269,9 +265,9 @@ export default function AskNews() {
                             <div className="bg-slate-50 border border-slate-100 rounded-2xl rounded-tl-xs px-4 sm:px-5 py-3.5">
                                 <LoadingMessage
                                     stages={[
-                                        'Scanning today’s headlines…',
-                                        'Verifying reporting sources…',
-                                        'Synthesizing concise answer…',
+                                        'Reading headlines…',
+                                        'Checking sources…',
+                                        'Writing answer…',
                                     ]}
                                     intervalMs={1500}
                                 />
@@ -314,7 +310,7 @@ export default function AskNews() {
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder="Ask about Kenya headlines, business, politics..."
+                            placeholder="Ask about today's news…"
                             aria-label="Ask about Kenyan news"
                             autoComplete="off"
                             maxLength={300}
@@ -331,9 +327,6 @@ export default function AskNews() {
                             </svg>
                         </button>
                     </form>
-                    <p className="text-[11px] text-slate-400 text-center mt-2">
-                        Answers are synthesized strictly from verified Kenyan news sources.
-                    </p>
                 </div>
             </div>
         </div>

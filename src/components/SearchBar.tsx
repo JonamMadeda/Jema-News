@@ -26,7 +26,7 @@ export default function SearchBar({ value, onChange }: SearchBarProps) {
                 onChange={(e) => onChange(e.target.value)}
                 aria-label="Search news"
                 autoComplete="off"
-                className="w-full bg-slate-50/80 border border-slate-200/90 py-2.5 pl-10 pr-16 focus:outline-none focus:bg-white focus:border-slate-800 focus:ring-2 focus:ring-slate-900/10 text-[16px] md:text-sm text-slate-800 transition-all placeholder:text-slate-400 rounded-xl"
+                className="w-full bg-white border border-slate-200/90 py-2.5 pl-10 pr-16 focus:outline-none focus:bg-white focus:border-slate-800 focus:ring-2 focus:ring-slate-900/10 text-[16px] md:text-sm text-slate-800 transition-all placeholder:text-slate-400 rounded-xl"
             />
             <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                 {!value && (

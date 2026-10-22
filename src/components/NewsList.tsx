@@ -9,18 +9,12 @@ import NewsDetail from './NewsDetail';
 import DailyDigest from './DailyDigest';
 import AskNews from './AskNews';
 import Sidebar from './Sidebar';
+import BottomNav from './BottomNav';
+import SubscribeButton from './SubscribeButton';
 import LoadingMessage from './LoadingMessage';
 import { loadBookmarks, loadHistory, recordHistory, toggleBookmark } from '@/lib/storage';
 import { isAppTab, type Tab } from '@/lib/tabs';
 import { TAB_EVENT, REFRESH_EVENT, getInitialTab, setAppTab } from './Navbar';
-
-const TABS: { id: Tab; label: string; short: string }[] = [
-    { id: 'ask', label: 'Ask AI', short: 'Ask' },
-    { id: 'brief', label: 'Daily Brief', short: 'Brief' },
-    { id: 'latest', label: 'Latest News', short: 'Latest' },
-    { id: 'trending', label: 'Trending', short: 'Trending' },
-    { id: 'saved', label: 'Saved', short: 'Saved' },
-];
 
 function getPageNumbers(current: number, total: number): (number | '…')[] {
     if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
@@ -29,31 +23,6 @@ function getPageNumbers(current: number, total: number): (number | '…')[] {
     return [1, '…', current - 1, current, current + 1, '…', total];
 }
 
-function TrendingRows({ items, onSelect }: { items: NewsItem[]; onSelect: (item: NewsItem) => void }) {
-    return (
-        <div className="space-y-2">
-            {items.map((t, i) => (
-                <button
-                    key={`${t.id}-${i}`}
-                    onClick={() => onSelect(t)}
-                    className="w-full text-left flex items-start gap-3 group hover:bg-slate-50/90 rounded-xl p-2 -mx-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
-                >
-                    <span className="w-6 h-6 rounded-lg bg-slate-100 group-hover:bg-slate-900 group-hover:text-white flex items-center justify-center text-xs font-bold text-slate-500 shrink-0 transition-colors">
-                        {i + 1}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:text-blue-700 transition-colors">
-                            {t.title}
-                        </span>
-                        <span className="block mt-1 text-[11px] font-medium text-slate-500 truncate">
-                            {t.source} • {t.category}
-                        </span>
-                    </span>
-                </button>
-            ))}
-        </div>
-    );
-}
 function readParams(fallbackTab: Tab = 'ask') {
     // fallbackTab comes from the server (?tab=) so SSR and hydration agree
     if (typeof window === 'undefined') return { tab: fallbackTab, cat: 'All', q: '', page: 1, story: '' };
@@ -95,7 +64,6 @@ function writeParams(patch: Partial<{ tab: Tab; cat: string; q: string; page: nu
 export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
     const initial = useRef(readParams(initialTab));
     const [activeTab, setActiveTab] = useState<Tab>(initial.current.tab);
-    const [mobileOpen, setMobileOpen] = useState(false);
     const [items, setItems] = useState<NewsItem[]>([]);
     const [total, setTotal] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
@@ -112,6 +80,7 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
     const [currentPage, setCurrentPage] = useState(initial.current.page);
     const [selectedItem, setSelectedItem] = useState<NewsItem | null>(null);
     const [toast, setToast] = useState<string | null>(null);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [bookmarkIds, setBookmarkIds] = useState<string[]>(() => loadBookmarks());
     const [historyIds, setHistoryIds] = useState<string[]>(() => loadHistory());
     const listTopRef = useRef<HTMLDivElement>(null);
@@ -337,11 +306,6 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
     const showHero = !isFiltering && safePage === 1 && paginatedNews.length > 0;
     const heroItem = showHero ? paginatedNews[0] : null;
     const restItems = showHero ? paginatedNews.slice(1) : paginatedNews;
-    // The hero is already shown above the feed, so drop it from the sidebar.
-    const trendingWithoutHero = heroItem
-        ? trending.filter((t) => t.id !== heroItem.id)
-        : trending;
-
     function handleTabChange(tab: Tab) {
         setActiveTab(tab);
         setAppTab(tab);
@@ -375,29 +339,21 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
         requestAnimationFrame(() => window.scrollTo(0, savedScroll.current || 0));
     }
 
+    function handleRefresh() {
+        setIsRefreshing(true);
+        window.dispatchEvent(new CustomEvent(REFRESH_EVENT));
+        setTimeout(() => setIsRefreshing(false), 800);
+    }
+
     return (
         <div className="flex flex-col md:flex-row h-dvh w-full overflow-hidden bg-slate-50">
             {/* Left Sidebar */}
-            <Sidebar
-                activeTab={activeTab}
-                onSelectTab={handleTabChange}
-                mobileOpen={mobileOpen}
-                onCloseMobile={() => setMobileOpen(false)}
-            />
+            <Sidebar activeTab={activeTab} onSelectTab={handleTabChange} />
 
             {/* Main Content Area */}
             <div className="flex-1 min-w-0 h-full flex flex-col overflow-hidden">
                 {/* Mobile top header bar */}
-                <header className="md:hidden shrink-0 h-12 border-b border-slate-200/80 bg-white px-3 flex items-center justify-between z-10">
-                    <button
-                        onClick={() => setMobileOpen(true)}
-                        aria-label="Open menu"
-                        className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-700 hover:bg-slate-100 active:scale-95 transition-all"
-                    >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
+                <header className="md:hidden shrink-0 h-12 border-b border-slate-200/80 bg-white px-4 flex items-center justify-between z-10">
                     <div className="flex items-center gap-2">
                         <span className="w-6 h-6 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold text-xs">
                             J
@@ -406,10 +362,23 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                             Jemanews
                         </span>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-semibold text-slate-600 uppercase tracking-wider px-2 py-0.5 bg-slate-100 rounded-md">
-                            {TABS.find((t) => t.id === activeTab)?.short || 'Chat'}
-                        </span>
+                    <div className="flex items-center gap-1">
+                        <SubscribeButton />
+                        <button
+                            onClick={handleRefresh}
+                            aria-label="Refresh news feeds"
+                            title="Refresh news"
+                            className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/25"
+                        >
+                            <svg
+                                className={`w-4 h-4 transition-transform duration-700 ${isRefreshing ? 'rotate-180 text-slate-900' : ''}`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h5M20 20v-5h-5M5 9a8 8 0 0114-3M19 15a8 8 0 01-14 3" />
+                            </svg>
+                        </button>
                     </div>
                 </header>
 
@@ -471,22 +440,23 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                             </div>
                         </div>
                     ) : (
-                        <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-8 py-6">
-                            <div className="max-w-5xl mx-auto w-full space-y-6">
+                        <div className="flex-1 min-h-0 overflow-y-auto">
+                            <div className="max-w-5xl mx-auto w-full">
                                 {activeTab === 'brief' ? (
-                                    <DailyDigest />
+                                    <div className="px-4 sm:px-8 py-6">
+                                        <DailyDigest />
+                                    </div>
                                 ) : activeTab === 'latest' ? (
-                                    <div className="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-5 items-start">
-                                        <div className="min-w-0">
-                                            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs">
-                                                <div className="md:sticky md:top-0 z-30 bg-white/95 md:backdrop-blur-sm -mx-2 px-2 pt-1 pb-3 border-b border-slate-100 mb-3">
-                                                    <SearchBar value={searchQuery} onChange={(v) => { setSearchQuery(v); setCurrentPage(1); }} />
-                                                    <CategoryFilter
-                                                        activeCategory={activeCategory}
-                                                        onCategoryChange={(c) => { setActiveCategory(c); setCurrentPage(1); }}
-                                                        counts={counts}
-                                                    />
-                                                </div>
+                                    <div>
+                                        <div className="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-sm px-4 sm:px-8 pt-4 pb-3 border-b border-slate-200/70">
+                                            <SearchBar value={searchQuery} onChange={(v) => { setSearchQuery(v); setCurrentPage(1); }} />
+                                            <CategoryFilter
+                                                activeCategory={activeCategory}
+                                                onCategoryChange={(c) => { setActiveCategory(c); setCurrentPage(1); }}
+                                                counts={counts}
+                                            />
+                                        </div>
+                                        <div className="px-4 sm:px-8 pt-4 pb-6">
 
                                                 {isFiltering && (
                                                     <p className="mb-3 text-xs font-semibold text-slate-600 flex items-center justify-between" role="status">
@@ -614,39 +584,11 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                                         </div>
                                                     )}
                                                 </div>
-                                            </div>
                                         </div>
-
-                                        <aside className="space-y-4 lg:sticky lg:top-0">
-                                            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs">
-                                                <div className="flex items-center gap-2 mb-1.5">
-                                                    <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
-                                                        Start with the brief
-                                                    </h3>
-                                                </div>
-                                                <p className="text-xs text-slate-600 leading-relaxed mb-3">
-                                                    2-minute AI catch-up across {counts.All || total} indexed stories.
-                                                </p>
-                                                <button
-                                                    onClick={() => handleTabChange('brief')}
-                                                    className="w-full py-2 px-3 text-xs font-semibold border border-slate-200 text-slate-800 rounded-xl hover:bg-slate-50 hover:border-slate-800 transition-all text-center block"
-                                                >
-                                                    Read Daily Brief →
-                                                </button>
-                                            </div>
-                                            <div className="hidden lg:block bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs">
-                                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3">
-                                                    Trending today
-                                                </h3>
-                                                <TrendingRows items={trendingWithoutHero} onSelect={handleSelect} />
-                                            </div>
-                                        </aside>
                                     </div>
                                 ) : activeTab === 'trending' ? (
-                                    <div className="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-5 items-start">
-                                        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs min-w-0">
-                                            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+                                    <div className="px-4 sm:px-8 py-6">
+                                            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-200/70">
                                                 <svg className="w-4 h-4 text-slate-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                                                 </svg>
@@ -660,7 +602,7 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                                         <button
                                                             key={`${t.id}-${i}`}
                                                             onClick={() => handleSelect(t)}
-                                                            className="w-full text-left flex items-start gap-3 py-3.5 first:pt-1 last:pb-1 group hover:bg-slate-50/80 rounded-xl px-2 -mx-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+                                                            className="w-full text-left flex items-start gap-3 py-3.5 first:pt-1 last:pb-1 group hover:bg-white rounded-xl px-2 -mx-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
                                                         >
                                                             <span className="w-7 h-7 rounded-lg bg-slate-100 group-hover:bg-slate-900 group-hover:text-white flex items-center justify-center text-xs font-bold text-slate-500 shrink-0 transition-colors">
                                                                 {i + 1}
@@ -682,28 +624,10 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                                 </p>
                                             )}
                                         </div>
-                                        <aside className="space-y-4 lg:sticky lg:top-0">
-                                            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs">
-                                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-1.5">
-                                                    Catch up fast
-                                                </h3>
-                                                <p className="text-xs text-slate-600 leading-relaxed mb-3">
-                                                    2-minute AI catch-up across {counts.All || total} indexed stories.
-                                                </p>
-                                                <button
-                                                    onClick={() => handleTabChange('brief')}
-                                                    className="w-full py-2 px-3 text-xs font-semibold border border-slate-200 text-slate-800 rounded-xl hover:bg-slate-50 hover:border-slate-800 transition-all text-center block"
-                                                >
-                                                    Read Daily Brief →
-                                                </button>
-                                            </div>
-                                        </aside>
-                                    </div>
                                 ) : (
-                                    <div className="grid lg:grid-cols-[minmax(0,1fr)_320px] gap-5 items-start">
-                                        <div className="min-w-0 space-y-4">
-                                            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs">
-                                                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3 pb-2 border-b border-slate-100 flex items-center justify-between">
+                                    <div className="px-4 sm:px-8 py-6 space-y-6">
+                                        <section>
+                                            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3 pb-2 border-b border-slate-200/70 flex items-center justify-between">
                                                     <span>Bookmarked Stories</span>
                                                     <span className="bg-slate-100 px-2 py-0.5 rounded-full text-slate-600 text-[11px]">
                                                         {savedItems.length}
@@ -726,11 +650,11 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                                         Nothing saved yet. Tap the bookmark icon on any story to save it for later.
                                                     </p>
                                                 )}
-                                            </div>
-                                            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs">
-                                                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3 pb-2 border-b border-slate-100">
-                                                    Recently Read
-                                                </h2>
+                                            </section>
+                                        <section>
+                                            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3 pb-2 border-b border-slate-200/70">
+                                                Recently Read
+                                            </h2>
                                                 {recentItems.length > 0 ? (
                                                     <div className="divide-y divide-slate-100">
                                                         {recentItems.map((item) => (
@@ -748,30 +672,15 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                                         Stories you open will appear here.
                                                     </p>
                                                 )}
-                                            </div>
-                                        </div>
-                                        <aside className="space-y-4 lg:sticky lg:top-0">
-                                            <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs">
-                                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-1.5">
-                                                    Start with the brief
-                                                </h3>
-                                                <p className="text-xs text-slate-600 leading-relaxed mb-3">
-                                                    2-minute AI catch-up across {counts.All || total} stories.
-                                                </p>
-                                                <button
-                                                    onClick={() => handleTabChange('brief')}
-                                                    className="w-full py-2 px-3 text-xs font-semibold border border-slate-200 text-slate-800 rounded-xl hover:bg-slate-50 hover:border-slate-800 transition-all text-center block"
-                                                >
-                                                    Read Daily Brief →
-                                                </button>
-                                            </div>
-                                        </aside>
+                                            </section>
                                     </div>
                                 )}
                             </div>
                         </div>
                     )}
                 </div>
+
+                <BottomNav activeTab={activeTab} onChange={handleTabChange} />
             </div>
         </div>
     );

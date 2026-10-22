@@ -122,21 +122,27 @@ export default function DailyDigest() {
 
     if (loading) {
         return (
-            <div className="space-y-3" aria-busy="true" aria-label="Loading daily brief">
-                <div className="bg-[#001f3f] rounded-md p-3">
-                    <LoadingMessage
-                        dark
-                        stages={[
-                            'Reading today’s top stories…',
-                            'Asking the AI to brief you…',
-                            'Writing your briefing…',
-                        ]}
-                    />
-                </div>
-                <div className="bg-white border border-gray-200 rounded-md p-3 animate-pulse space-y-2">
-                    <div className="h-3 bg-gray-100 w-1/3 rounded-md"></div>
-                    <div className="h-3 bg-gray-100 w-full rounded"></div>
-                    <div className="h-3 bg-gray-100 w-11/12 rounded"></div>
+            <div
+                className="min-h-[60vh] flex flex-col items-center justify-center"
+                aria-busy="true"
+                aria-label="Loading daily brief"
+            >
+                <div className="w-full max-w-md space-y-3">
+                    <div className="bg-slate-900 rounded-2xl px-5 py-4 border border-slate-800 shadow-xs">
+                        <LoadingMessage
+                            dark
+                            stages={[
+                                'Reading today’s top stories…',
+                                'Asking the AI to brief you…',
+                                'Writing your briefing…',
+                            ]}
+                        />
+                    </div>
+                    <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs animate-pulse space-y-2.5">
+                        <div className="h-3 bg-slate-100 w-1/3 rounded-full"></div>
+                        <div className="h-3 bg-slate-100 w-full rounded-full"></div>
+                        <div className="h-3 bg-slate-100 w-11/12 rounded-full"></div>
+                    </div>
                 </div>
             </div>
         );
@@ -144,21 +150,23 @@ export default function DailyDigest() {
 
     if (error) {
         return (
-            <div className="border border-dashed border-gray-300 rounded-md p-4 bg-white">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-gray-900 mb-1">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-1">
                     Brief unavailable
                 </p>
-                <p className="text-sm text-gray-600 mb-3">{error}. You can still browse the latest headlines.</p>
+                <p className="text-sm text-slate-600 mb-4">
+                    {error}. You can still browse the latest headlines.
+                </p>
                 <div className="flex gap-2 flex-wrap">
                     <button
                         onClick={() => load(true)}
-                        className="min-h-[32px] text-[11px] font-bold uppercase tracking-wide px-4 py-1.5 bg-[#001f3f] text-white rounded-md hover:bg-[#003366] transition-colors whitespace-nowrap active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2"
+                        className="min-h-9 text-xs font-semibold px-4 py-1.5 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors whitespace-nowrap active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/25"
                     >
                         Retry
                     </button>
                     <button
                         onClick={() => { setAppTab('latest'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                        className="min-h-[32px] text-[11px] font-bold uppercase tracking-wide px-4 py-1.5 border border-gray-200 text-[#001f3f] rounded-md hover:border-[#001f3f] transition-colors whitespace-nowrap active:scale-[0.98]"
+                        className="min-h-9 text-xs font-semibold px-4 py-1.5 border border-slate-200 text-slate-700 rounded-xl hover:border-slate-800 hover:text-slate-900 transition-colors whitespace-nowrap active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900/25"
                     >
                         Browse latest →
                     </button>
@@ -183,13 +191,13 @@ export default function DailyDigest() {
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
                         <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center shrink-0 border border-white/10">
-                            <svg className="w-4 h-4 text-blue-300" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <svg className="w-4 h-4 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                             </svg>
                         </div>
                         <div className="min-w-0">
                             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-100">
-                                Today&apos;s Daily Intelligence Brief
+                                Daily Brief
                             </h2>
                             <p className="text-xs text-slate-400 truncate">Synthesized {timeAgo(data.generatedAt)}</p>
                         </div>
@@ -198,7 +206,7 @@ export default function DailyDigest() {
                         onClick={() => load(true)}
                         aria-label="Regenerate brief"
                         title="Regenerate brief"
-                        className="w-8 h-8 shrink-0 inline-flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                        className="w-9 h-9 shrink-0 inline-flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-colors rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h5M20 20v-5h-5M5 9a8 8 0 0114-3M19 15a8 8 0 01-14 3" />
@@ -211,7 +219,7 @@ export default function DailyDigest() {
                 <ReactMarkdown
                     components={{
                         h1: (props) => <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 mt-5 mb-2 first:mt-0" {...props} />,
-                        h2: (props) => <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 mt-5 mb-2 first:mt-0 pb-1.5 border-b border-slate-100" {...props} />,
+                        h2: (props) => <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 mt-5 mb-2 first:mt-0 pb-1.5 border-b border-slate-200/70" {...props} />,
                         h3: (props) => <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 mt-4 mb-2" {...props} />,
                         p: (props) => <p className="text-sm leading-relaxed text-slate-700 mb-3" {...props} />,
                         ul: (props) => <ul className="space-y-2 mb-4" {...props} />,
@@ -223,9 +231,9 @@ export default function DailyDigest() {
                     {data.briefing}
                 </ReactMarkdown>
 
-                <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
+                <div className="mt-6 pt-4 border-t border-slate-200/70 flex items-center justify-between gap-3 flex-wrap">
                     <p className="text-xs text-slate-500">
-                        Synthesized by AI{sourceLine} · Cross-check with original sources.
+                        AI summary{sourceLine} · Verify sources.
                     </p>
                     <div className="flex items-center gap-3 shrink-0">
                         <button

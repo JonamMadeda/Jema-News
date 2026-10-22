@@ -48,7 +48,7 @@ export default function CategoryFilter({ activeCategory, onCategoryChange, count
             {/* Fades the right edge so users perceive the horizontal scroll */}
             <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white to-transparent sm:hidden"
+                className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-slate-50 to-transparent sm:hidden"
             />
         </div>
     );
