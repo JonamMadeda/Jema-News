@@ -62,7 +62,14 @@ export async function POST(req: Request) {
             { temperature: 0.4, maxTokens: 300 }
         );
 
-        return NextResponse.json({ answer, model, generatedAt: new Date().toISOString() });
+        return NextResponse.json({
+            answer,
+            model,
+            generatedAt: new Date().toISOString(),
+            headlines: top
+                .filter((headline) => /^https?:\/\//i.test(headline.link))
+                .map(({ title, source, link }) => ({ title, source, link })),
+        });
     } catch (error) {
         console.error('Ask API Error:', error);
         const message = error instanceof Error ? error.message : 'Failed to answer';

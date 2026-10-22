@@ -8,6 +8,8 @@ export type NewsItem = {
     category: string;
 };
 
+export type StorySource = Pick<NewsItem, 'title' | 'source' | 'link'>;
+
 export const VALID_CATEGORIES = [
     'General',
     'Politics',

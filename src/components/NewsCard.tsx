@@ -5,6 +5,7 @@ type NewsCardProps = {
     onSelect: (item: NewsItem) => void;
     saved?: boolean;
     onToggleSave?: () => void;
+    density?: 'comfortable' | 'compact';
 };
 
 function timeAgo(pubDate: string): string {
@@ -34,7 +35,8 @@ function getCategoryColor(category: string): string {
     }
 }
 
-export default function NewsCard({ item, onSelect, saved = false, onToggleSave }: NewsCardProps) {
+export default function NewsCard({ item, onSelect, saved = false, onToggleSave, density = 'comfortable' }: NewsCardProps) {
+    const compact = density === 'compact';
     return (
         <article
             onClick={() => onSelect(item)}
@@ -46,7 +48,7 @@ export default function NewsCard({ item, onSelect, saved = false, onToggleSave }
                 }
             }}
             tabIndex={0}
-            className="group py-4 px-3 -mx-3 border-b border-slate-100 last:border-0 rounded-xl cursor-pointer hover:bg-slate-50/80 active:bg-slate-100/70 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+            className={`group px-3 -mx-3 border-b border-slate-100 last:border-0 rounded-xl cursor-pointer hover:bg-slate-50/80 active:bg-slate-100/70 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 ${compact ? 'py-2.5' : 'py-4'}`}
         >
             <div className="flex flex-col gap-2 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap text-xs">
@@ -93,7 +95,7 @@ export default function NewsCard({ item, onSelect, saved = false, onToggleSave }
                     </span>
                 </h3>
 
-                <p className="text-slate-600 text-sm leading-relaxed line-clamp-2">
+                <p className={`text-slate-600 text-sm leading-relaxed ${compact ? 'line-clamp-1' : 'line-clamp-2'}`}>
                     {item.contentSnippet}
                 </p>
             </div>

@@ -7,6 +7,7 @@
 // Accuracy is untouched — same prompt, same models, just served instantly.
 
 import { getSharedRedis } from '@/lib/redis';
+import type { StorySource } from '@/lib/types';
 
 export type CachedDigest = {
     briefing: string;
@@ -14,9 +15,10 @@ export type CachedDigest = {
     generatedAt: string;
     model: string;
     sources: string[];
+    headlines: StorySource[];
 };
 
-const KEY = 'jema:digest';
+const KEY = 'jema:digest:v2';
 const LOCK_KEY = 'jema:digest-lock';
 const TTL_SECONDS = 3 * 60 * 60; // 3 hours, mirrors the client cache
 const LOCK_TTL_SECONDS = 90;

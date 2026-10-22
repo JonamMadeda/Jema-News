@@ -109,18 +109,51 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
     const [searchQuery, setSearchQuery] = useState(initial.current.q);
     const [debouncedQuery, setDebouncedQuery] = useState(initial.current.q);
     const [activeCategory, setActiveCategory] = useState(initial.current.cat);
+    const [feedDensity, setFeedDensity] = useState<'comfortable' | 'compact'>('comfortable');
+    const [densityReady, setDensityReady] = useState(false);
     const [currentPage, setCurrentPage] = useState(initial.current.page);
     const [selectedItem, setSelectedItem] = useState<NewsItem | null>(null);
     const [toast, setToast] = useState<string | null>(null);
     const [bookmarkIds, setBookmarkIds] = useState<string[]>(() => loadBookmarks());
     const [historyIds, setHistoryIds] = useState<string[]>(() => loadHistory());
     const listTopRef = useRef<HTMLDivElement>(null);
+    const activeTabRef = useRef(activeTab);
+    activeTabRef.current = activeTab;
+    const selectedItemRef = useRef(selectedItem);
+    selectedItemRef.current = selectedItem;
     const savedScroll = useRef(0);
+    const focusSearchOnLatest = useRef(false);
     const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const abortRef = useRef<AbortController | null>(null);
     const pageCache = useRef(new Map<string, Awaited<ReturnType<typeof fetchPage>>>());
     const LIMIT = 6;
     const PAGE_CACHE_CAP = 20;
+
+    useEffect(() => {
+        try {
+            if (localStorage.getItem('jema:feed-density') === 'compact') {
+                setFeedDensity('compact');
+            }
+        } catch {
+            // Keep the comfortable default when storage is unavailable.
+        }
+        setDensityReady(true);
+    }, []);
+
+    useEffect(() => {
+        if (!densityReady) return;
+        try {
+            localStorage.setItem('jema:feed-density', feedDensity);
+        } catch {
+            // The density control remains usable for this visit.
+        }
+    }, [feedDensity, densityReady]);
+
+    useEffect(() => {
+        if (!focusSearchOnLatest.current || activeTab !== 'latest' || selectedItem) return;
+        focusSearchOnLatest.current = false;
+        requestAnimationFrame(() => document.getElementById('news-search')?.focus());
+    }, [activeTab, selectedItem]);
 
     function cacheSet(key: string, value: Awaited<ReturnType<typeof fetchPage>>) {
         const m = pageCache.current;
@@ -297,7 +330,7 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
             const typing = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
             if (e.key === '/' && !typing) {
                 e.preventDefault();
-                document.getElementById('news-search')?.focus();
+                openLatestSearch();
             }
             if (e.key === 'Escape' && typing && document.activeElement?.id === 'news-search') {
                 setSearchQuery('');
@@ -347,6 +380,20 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
         setAppTab(tab);
         setCurrentPage(1);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function openLatestSearch() {
+        const searchInput = document.getElementById('news-search');
+        if (searchInput && !selectedItemRef.current) {
+            searchInput.focus();
+            return;
+        }
+        focusSearchOnLatest.current = true;
+        if (selectedItemRef.current) {
+            setSelectedItem(null);
+            writeParams({ story: '' }, false);
+        }
+        if (activeTabRef.current !== 'latest') handleTabChange('latest');
     }
 
     function handlePageChange(page: number) {
@@ -407,8 +454,20 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                         </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] font-semibold text-slate-600 uppercase tracking-wider px-2 py-0.5 bg-slate-100 rounded-md">
-                            {TABS.find((t) => t.id === activeTab)?.short || 'Chat'}
+                        <button
+                            type="button"
+                            onClick={openLatestSearch}
+                            aria-label="Search latest stories"
+                            title="Search latest stories"
+                            className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-600 hover:bg-slate-100 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m21 21-4.3-4.3m2.3-5.2a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z" />
+                            </svg>
+                        </button>
+                        <span className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-slate-800 tracking-wide px-2.5 py-1.5 bg-slate-100 rounded-lg">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-900" aria-hidden="true" />
+                            {TABS.find((t) => t.id === activeTab)?.label || 'Ask AI'}
                         </span>
                     </div>
                 </header>
@@ -421,6 +480,9 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
 
                 {/* Right Workspace */}
                 <div ref={listTopRef} className="flex-1 min-h-0 w-full overflow-hidden flex flex-col">
+                    <div className={activeTab === 'ask' && !selectedItem ? 'flex-1 min-h-0 flex flex-col' : 'hidden'}>
+                        <AskNews />
+                    </div>
                     {selectedItem ? (
                         <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-8 py-6">
                             <div className="max-w-3xl mx-auto w-full">
@@ -432,9 +494,7 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                 />
                             </div>
                         </div>
-                    ) : activeTab === 'ask' ? (
-                        <AskNews />
-                    ) : loading && items.length === 0 ? (
+                    ) : activeTab === 'ask' ? null : loading && items.length === 0 ? (
                         <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-8 py-6">
                             <div className="max-w-5xl mx-auto w-full space-y-4">
                                 <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-2xs">
@@ -480,6 +540,25 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                         <div className="min-w-0">
                                             <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs">
                                                 <div className="md:sticky md:top-0 z-30 bg-white/95 md:backdrop-blur-sm -mx-2 px-2 pt-1 pb-3 border-b border-slate-100 mb-3">
+                                                    <div className="flex items-center justify-between gap-3 mb-3">
+                                                        <div>
+                                                            <h2 className="text-sm font-bold text-slate-900">Latest stories</h2>
+                                                            <p className="mt-0.5 text-[11px] text-slate-500">
+                                                                Search and category filters apply to Latest News only.
+                                                            </p>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setFeedDensity((density) => density === 'compact' ? 'comfortable' : 'compact')}
+                                                            aria-pressed={feedDensity === 'compact'}
+                                                            className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 hover:border-slate-400 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+                                                        >
+                                                            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                                            </svg>
+                                                            {feedDensity === 'compact' ? 'Compact' : 'Comfortable'}
+                                                        </button>
+                                                    </div>
                                                     <SearchBar value={searchQuery} onChange={(v) => { setSearchQuery(v); setCurrentPage(1); }} />
                                                     <CategoryFilter
                                                         activeCategory={activeCategory}
@@ -522,7 +601,7 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                                                         if (e.key === 'Enter') handleSelect(heroItem);
                                                                     }}
                                                                     tabIndex={0}
-                                                                    className="group cursor-pointer mb-5 rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50/50 to-slate-100/60 p-4 sm:p-5 hover:border-slate-300 hover:shadow-sm transition-all active:scale-[0.995] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
+                                                                    className={`group cursor-pointer rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50/50 to-slate-100/60 hover:border-slate-300 hover:shadow-sm transition-all active:scale-[0.995] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 ${feedDensity === 'compact' ? 'mb-3 p-3 sm:p-4' : 'mb-5 p-4 sm:p-5'}`}
                                                                 >
                                                                     <div className="flex items-center gap-2 flex-wrap mb-2.5 text-xs">
                                                                         <span className="bg-slate-900 text-white font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs text-[11px]">
@@ -536,7 +615,7 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                                                     <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 group-hover:text-blue-700 leading-tight tracking-tight mb-2 transition-colors">
                                                                         {heroItem.title}
                                                                     </h3>
-                                                                    <p className="text-sm text-slate-600 leading-relaxed line-clamp-3">
+                                                                    <p className={`text-sm text-slate-600 leading-relaxed ${feedDensity === 'compact' ? 'line-clamp-2' : 'line-clamp-3'}`}>
                                                                         {heroItem.contentSnippet}
                                                                     </p>
                                                                 </article>
@@ -549,6 +628,7 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                                                         onSelect={handleSelect}
                                                                         saved={bookmarkIds.includes(item.id)}
                                                                         onToggleSave={() => handleToggleBookmark(item)}
+                                                                        density={feedDensity}
                                                                     />
                                                                 ))}
                                                             </div>
@@ -677,9 +757,16 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <p className="py-10 text-center text-xs font-medium text-slate-500">
+                                                <div className="py-10 text-center text-xs font-medium text-slate-500">
                                                     No trending stories right now.
-                                                </p>
+                                                    <span className="block mt-1">Browse the latest coverage while we refresh the list.</span>
+                                                    <button
+                                                        onClick={() => handleTabChange('latest')}
+                                                        className="mt-3 px-3 py-1.5 rounded-lg bg-slate-100 text-slate-800 font-semibold hover:bg-slate-200"
+                                                    >
+                                                        Browse latest stories
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
                                         <aside className="space-y-4 lg:sticky lg:top-0">
@@ -722,9 +809,17 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                                         ))}
                                                     </div>
                                                 ) : (
-                                                    <p className="py-8 text-center text-xs text-slate-500">
-                                                        Nothing saved yet. Tap the bookmark icon on any story to save it for later.
-                                                    </p>
+                                                    <div className="py-8 text-center">
+                                                        <p className="text-xs text-slate-500">
+                                                            Nothing saved yet. Bookmark a story to keep it here for later.
+                                                        </p>
+                                                        <button
+                                                            onClick={() => handleTabChange('latest')}
+                                                            className="mt-3 px-3 py-1.5 rounded-lg bg-slate-100 text-xs font-semibold text-slate-800 hover:bg-slate-200"
+                                                        >
+                                                            Find stories to save
+                                                        </button>
+                                                    </div>
                                                 )}
                                             </div>
                                             <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs">
