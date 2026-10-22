@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import LoadingMessage from './LoadingMessage';
 import { setAppTab } from './Navbar';
+import type { StorySource } from '@/lib/types';
 
 type DigestResponse = {
     briefing: string;
@@ -11,6 +12,7 @@ type DigestResponse = {
     generatedAt: string;
     model: string;
     sources?: string[];
+    headlines?: StorySource[];
     cached?: boolean;
     error?: string;
 };
@@ -50,7 +52,7 @@ export default function DailyDigest() {
         // Client cache (survives reloads + server cold starts) mirrors the 3h server TTL
         if (!force) {
             try {
-                const raw = localStorage.getItem('jema:digest');
+                const raw = localStorage.getItem('jema:digest:v2');
                 if (raw) {
                     const cached = JSON.parse(raw) as { data: DigestResponse; expiresAt: number };
                     if (cached.expiresAt > Date.now() && cached.data?.briefing) {
@@ -83,7 +85,7 @@ export default function DailyDigest() {
             setData(json);
             try {
                 localStorage.setItem(
-                    'jema:digest',
+                    'jema:digest:v2',
                     JSON.stringify({ data: json, expiresAt: Date.now() + 3 * 60 * 60 * 1000 })
                 );
             } catch {
@@ -123,7 +125,7 @@ export default function DailyDigest() {
     if (loading) {
         return (
             <div className="space-y-3" aria-busy="true" aria-label="Loading daily brief">
-                <div className="bg-[#001f3f] rounded-md p-3">
+                <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800">
                     <LoadingMessage
                         dark
                         stages={[
@@ -133,10 +135,10 @@ export default function DailyDigest() {
                         ]}
                     />
                 </div>
-                <div className="bg-white border border-gray-200 rounded-md p-3 animate-pulse space-y-2">
-                    <div className="h-3 bg-gray-100 w-1/3 rounded-md"></div>
-                    <div className="h-3 bg-gray-100 w-full rounded"></div>
-                    <div className="h-3 bg-gray-100 w-11/12 rounded"></div>
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-5 animate-pulse space-y-2">
+                    <div className="h-3 bg-slate-100 w-1/3 rounded-md"></div>
+                    <div className="h-3 bg-slate-100 w-full rounded"></div>
+                    <div className="h-3 bg-slate-100 w-11/12 rounded"></div>
                 </div>
             </div>
         );
@@ -144,21 +146,21 @@ export default function DailyDigest() {
 
     if (error) {
         return (
-            <div className="border border-dashed border-gray-300 rounded-md p-4 bg-white">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-gray-900 mb-1">
+            <div className="border border-slate-200/80 rounded-2xl p-5 bg-white shadow-2xs">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-900 mb-1">
                     Brief unavailable
                 </p>
-                <p className="text-sm text-gray-600 mb-3">{error}. You can still browse the latest headlines.</p>
+                <p className="text-sm text-slate-600 mb-3">{error}. You can still browse the latest headlines.</p>
                 <div className="flex gap-2 flex-wrap">
                     <button
                         onClick={() => load(true)}
-                        className="min-h-[32px] text-[11px] font-bold uppercase tracking-wide px-4 py-1.5 bg-[#001f3f] text-white rounded-md hover:bg-[#003366] transition-colors whitespace-nowrap active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#001f3f] focus-visible:ring-offset-2"
+                        className="min-h-[36px] text-xs font-semibold px-4 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-colors whitespace-nowrap active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2"
                     >
                         Retry
                     </button>
                     <button
                         onClick={() => { setAppTab('latest'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                        className="min-h-[32px] text-[11px] font-bold uppercase tracking-wide px-4 py-1.5 border border-gray-200 text-[#001f3f] rounded-md hover:border-[#001f3f] transition-colors whitespace-nowrap active:scale-[0.98]"
+                        className="min-h-[36px] text-xs font-semibold px-4 py-2 border border-slate-200 text-slate-800 rounded-xl hover:border-slate-800 transition-colors whitespace-nowrap active:scale-[0.98]"
                     >
                         Browse latest →
                     </button>
@@ -222,6 +224,29 @@ export default function DailyDigest() {
                 >
                     {data.briefing}
                 </ReactMarkdown>
+
+                {data.headlines && data.headlines.length > 0 && (
+                    <details className="mt-5 border-t border-slate-100 pt-4">
+                        <summary className="w-fit cursor-pointer text-xs font-semibold text-slate-600 hover:text-slate-900">
+                            Headline context ({data.headlines.length})
+                        </summary>
+                        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                            {data.headlines.map((headline) => (
+                                <li key={headline.link} className="min-w-0">
+                                    <a
+                                        href={headline.link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs font-medium text-slate-700 hover:text-blue-700 hover:underline"
+                                    >
+                                        {headline.title}
+                                    </a>
+                                    <span className="block mt-0.5 text-[11px] text-slate-400">{headline.source}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </details>
+                )}
 
                 <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
                     <p className="text-xs text-slate-500">

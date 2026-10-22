@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import LoadingMessage from './LoadingMessage';
+import type { StorySource } from '@/lib/types';
 
 type Message = {
     id: number;
@@ -10,7 +11,10 @@ type Message = {
     text: string;
     at: string;
     error?: boolean;
+    headlines?: StorySource[];
 };
+
+const SESSION_KEY = 'jema:ask-session';
 
 const SUGGESTIONS = [
     "What are the major headlines in Kenya today?",
@@ -39,6 +43,7 @@ function AssistantAvatar() {
 
 export default function AskNews() {
     const [messages, setMessages] = useState<Message[]>([]);
+    const [restored, setRestored] = useState(false);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
     const [copiedId, setCopiedId] = useState<number | null>(null);
@@ -46,6 +51,40 @@ export default function AskNews() {
     const idRef = useRef(0);
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        try {
+            const saved = sessionStorage.getItem(SESSION_KEY);
+            if (saved) {
+                const parsed: unknown = JSON.parse(saved);
+                if (Array.isArray(parsed)) {
+                    const valid = parsed.filter(
+                        (message): message is Message =>
+                            message &&
+                            typeof message === 'object' &&
+                            typeof message.id === 'number' &&
+                            (message.role === 'user' || message.role === 'assistant') &&
+                            typeof message.text === 'string' &&
+                            typeof message.at === 'string'
+                    );
+                    setMessages(valid.slice(-100));
+                    idRef.current = valid.reduce((highest, message) => Math.max(highest, message.id), 0);
+                }
+            }
+        } catch {
+            // Ignore stale or unavailable session storage.
+        }
+        setRestored(true);
+    }, []);
+
+    useEffect(() => {
+        if (!restored) return;
+        try {
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify(messages));
+        } catch {
+            // Session storage may be unavailable or full.
+        }
+    }, [messages, restored]);
 
     // Auto-scroll when messages update or loading state changes
     useEffect(() => {
@@ -74,7 +113,13 @@ export default function AskNews() {
             idRef.current += 1;
             setMessages((m) => [
                 ...m,
-                { id: idRef.current, role: 'assistant', text: json.answer, at: stamp() },
+                {
+                    id: idRef.current,
+                    role: 'assistant',
+                    text: json.answer,
+                    at: stamp(),
+                    headlines: Array.isArray(json.headlines) ? json.headlines : [],
+                },
             ]);
         } catch (err) {
             idRef.current += 1;
@@ -136,7 +181,7 @@ export default function AskNews() {
                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                     <span>Kenya News Intelligence</span>
                     <span className="text-slate-300 hidden sm:inline">•</span>
-                    <span className="text-slate-400 font-normal hidden sm:inline">Verified from today&apos;s headlines</span>
+                    <span className="text-slate-400 font-normal hidden sm:inline">Grounded in today&apos;s headlines</span>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -179,7 +224,7 @@ export default function AskNews() {
                                 How can I help you today?
                             </h2>
                             <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mb-8 max-w-md mx-auto">
-                                Ask any question about breaking events, politics, business, or public sector news in Kenya. Answers are synthesized strictly from verified current reports.
+                                Ask about breaking events, politics, business, or public services. Open the headline context under each answer to check the original reports.
                             </p>
 
                             <div className="space-y-2 text-left">
@@ -258,6 +303,28 @@ export default function AskNews() {
                                             {copiedId === m.id ? 'Copied ✓' : 'Copy'}
                                         </button>
                                     </div>
+                                    {m.headlines && m.headlines.length > 0 && (
+                                        <details className="mt-2 ml-1 text-xs text-slate-500">
+                                            <summary className="w-fit cursor-pointer font-medium hover:text-slate-800">
+                                                Headline context ({m.headlines.length})
+                                            </summary>
+                                            <ul className="mt-2 space-y-1.5 border-l border-slate-200 pl-3">
+                                                {m.headlines.map((headline) => (
+                                                    <li key={headline.link}>
+                                                        <a
+                                                            href={headline.link}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="hover:text-blue-700 hover:underline"
+                                                        >
+                                                            {headline.title}
+                                                        </a>
+                                                        <span className="text-slate-400"> · {headline.source}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </details>
+                                    )}
                                 </div>
                             </div>
                         )

@@ -37,5 +37,8 @@ export async function buildFreshDigest(apiKey: string): Promise<CachedDigest> {
         generatedAt: new Date().toISOString(),
         model,
         sources: [...new Set(top.map((t) => t.source))].slice(0, 6),
+        headlines: top
+            .filter((headline) => /^https?:\/\//i.test(headline.link))
+            .map(({ title, source, link }) => ({ title, source, link })),
     };
 }
