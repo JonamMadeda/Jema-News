@@ -14,14 +14,7 @@ import SubscribeButton from './SubscribeButton';
 import LoadingMessage from './LoadingMessage';
 import { loadBookmarks, loadHistory, recordHistory, toggleBookmark } from '@/lib/storage';
 import { isAppTab, type Tab } from '@/lib/tabs';
-import { TAB_EVENT, REFRESH_EVENT, getInitialTab, setAppTab } from './Navbar';
-
-function getPageNumbers(current: number, total: number): (number | '…')[] {
-    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-    if (current <= 4) return [1, 2, 3, 4, 5, '…', total];
-    if (current >= total - 3) return [1, '…', total - 4, total - 3, total - 2, total - 1, total];
-    return [1, '…', current - 1, current, current + 1, '…', total];
-}
+import { TAB_EVENT, REFRESH_EVENT, getInitialTab, setAppTab } from '@/lib/appEvents';
 
 function readParams(fallbackTab: Tab = 'ask') {
     // fallbackTab comes from the server (?tab=) so SSR and hydration agree
@@ -303,9 +296,6 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
     const paginatedNews = items;
     const safePage = Math.min(currentPage, Math.max(1, totalPages));
     const isFiltering = searchQuery.trim() !== '' || activeCategory !== 'All';
-    const showHero = !isFiltering && safePage === 1 && paginatedNews.length > 0;
-    const heroItem = showHero ? paginatedNews[0] : null;
-    const restItems = showHero ? paginatedNews.slice(1) : paginatedNews;
     function handleTabChange(tab: Tab) {
         setActiveTab(tab);
         setAppTab(tab);
@@ -470,7 +460,7 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                                                 setSearchQuery('');
                                                                 setActiveCategory('All');
                                                             }}
-                                                            className="text-xs font-semibold text-blue-600 hover:text-blue-800 underline underline-offset-2"
+                                                            className="text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors"
                                                         >
                                                             Clear filters
                                                         </button>
@@ -479,42 +469,16 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
 
                                                 <div className="mt-2">
                                                     {pageLoading && items.length > 0 && (
-                                                        <div className="mb-3 rounded-xl border border-slate-100 bg-slate-50 px-3.5 py-2.5">
+                                                        <div className="mb-2 px-1">
                                                             <LoadingMessage stages={['Loading page…']} intervalMs={1200} />
                                                         </div>
                                                     )}
                                                     {paginatedNews.length > 0 ? (
                                                         <>
-                                                            {heroItem && (
-                                                                <article
-                                                                    onClick={() => handleSelect(heroItem)}
-                                                                    onKeyDown={(e) => {
-                                                                        if (e.key === 'Enter') handleSelect(heroItem);
-                                                                    }}
-                                                                    tabIndex={0}
-                                                                    className="group cursor-pointer mb-5 rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50/50 to-slate-100/60 p-4 sm:p-5 hover:border-slate-300 hover:shadow-sm transition-all active:scale-[0.995] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900"
-                                                                >
-                                                                    <div className="flex items-center gap-2 flex-wrap mb-2.5 text-xs">
-                                                                        <span className="bg-slate-900 text-white font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs text-[11px]">
-                                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                                                                            Top Story
-                                                                        </span>
-                                                                        <span className="font-semibold text-slate-700">{heroItem.category}</span>
-                                                                        <span aria-hidden="true" className="text-slate-300">•</span>
-                                                                        <span className="text-slate-500 font-medium truncate">{heroItem.source}</span>
-                                                                    </div>
-                                                                    <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 group-hover:text-blue-700 leading-tight tracking-tight mb-2 transition-colors">
-                                                                        {heroItem.title}
-                                                                    </h3>
-                                                                    <p className="text-sm text-slate-600 leading-relaxed line-clamp-3">
-                                                                        {heroItem.contentSnippet}
-                                                                    </p>
-                                                                </article>
-                                                            )}
                                                             <div className="divide-y divide-slate-100">
-                                                                {restItems.map((item, idx) => (
+                                                                {paginatedNews.map((item) => (
                                                                     <NewsCard
-                                                                        key={`${item.id}-${idx}`}
+                                                                        key={item.id}
                                                                         item={item}
                                                                         onSelect={handleSelect}
                                                                         saved={bookmarkIds.includes(item.id)}
@@ -524,46 +488,24 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                                             </div>
 
                                                             {totalPages > 1 && (
-                                                                <nav aria-label="News pages" className="mt-6 flex flex-col gap-3 border-t border-slate-100 pt-5">
-                                                                    <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                                                                        {getPageNumbers(safePage, totalPages).map((p, i) =>
-                                                                            p === '…' ? (
-                                                                                <span key={`e-${i}`} className="text-slate-400 px-1 text-xs">…</span>
-                                                                            ) : (
-                                                                                <button
-                                                                                    key={p}
-                                                                                    onClick={() => handlePageChange(p)}
-                                                                                    aria-current={p === safePage ? 'page' : undefined}
-                                                                                    className={`min-w-[34px] min-h-[34px] px-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 ${
-                                                                                        p === safePage
-                                                                                            ? 'bg-slate-900 text-white shadow-2xs'
-                                                                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                                                                    }`}
-                                                                                >
-                                                                                    {p}
-                                                                                </button>
-                                                                            )
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="flex items-center justify-between text-xs">
-                                                                        <button
-                                                                            onClick={() => handlePageChange(Math.max(safePage - 1, 1))}
-                                                                            disabled={safePage === 1}
-                                                                            className="px-3 py-1.5 rounded-lg font-semibold text-slate-700 disabled:text-slate-300 hover:bg-slate-100 transition-colors"
-                                                                        >
-                                                                            ← Prev
-                                                                        </button>
-                                                                        <span className="text-xs font-medium text-slate-500">
-                                                                            Page {safePage} of {totalPages}
-                                                                        </span>
-                                                                        <button
-                                                                            onClick={() => handlePageChange(Math.min(safePage + 1, totalPages))}
-                                                                            disabled={safePage === totalPages}
-                                                                            className="px-3 py-1.5 rounded-lg font-semibold text-slate-700 disabled:text-slate-300 hover:bg-slate-100 transition-colors"
-                                                                        >
-                                                                            Next →
-                                                                        </button>
-                                                                    </div>
+                                                                <nav aria-label="News pages" className="mt-5 flex items-center justify-between border-t border-slate-200/70 pt-4">
+                                                                    <button
+                                                                        onClick={() => handlePageChange(Math.max(safePage - 1, 1))}
+                                                                        disabled={safePage === 1}
+                                                                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 disabled:text-slate-300 hover:bg-slate-100 transition-colors"
+                                                                    >
+                                                                        ← Prev
+                                                                    </button>
+                                                                    <span className="text-xs font-medium text-slate-500">
+                                                                        Page {safePage} of {totalPages}
+                                                                    </span>
+                                                                    <button
+                                                                        onClick={() => handlePageChange(Math.min(safePage + 1, totalPages))}
+                                                                        disabled={safePage === totalPages}
+                                                                        className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 disabled:text-slate-300 hover:bg-slate-100 transition-colors"
+                                                                    >
+                                                                        Next →
+                                                                    </button>
                                                                 </nav>
                                                             )}
                                                         </>
@@ -608,7 +550,7 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                                                 {i + 1}
                                                             </span>
                                                             <span className="min-w-0 flex-1">
-                                                                <span className="block text-sm sm:text-base font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:text-blue-700 transition-colors">
+                                                                <span className="block text-[15px] sm:text-base font-semibold text-slate-900 leading-snug line-clamp-2 group-hover:text-blue-700 transition-colors">
                                                                     {t.title}
                                                                 </span>
                                                                 <span className="block mt-1 text-[11px] font-medium text-slate-500 truncate">
@@ -619,7 +561,7 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <p className="py-10 text-center text-xs font-medium text-slate-500">
+                                                <p className="py-10 text-center text-sm font-medium text-slate-500">
                                                     No trending stories right now.
                                                 </p>
                                             )}
@@ -627,12 +569,12 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                 ) : (
                                     <div className="px-4 sm:px-8 py-6 space-y-6">
                                         <section>
-                                            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3 pb-2 border-b border-slate-200/70 flex items-center justify-between">
-                                                    <span>Bookmarked Stories</span>
-                                                    <span className="bg-slate-100 px-2 py-0.5 rounded-full text-slate-600 text-[11px]">
-                                                        {savedItems.length}
-                                                    </span>
-                                                </h2>
+                                            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 mb-4 pb-3 border-b border-slate-200/70 flex items-center justify-between">
+                                                <span>Bookmarked Stories</span>
+                                                <span className="bg-slate-100 px-2 py-0.5 rounded-full text-[11px] font-medium text-slate-600">
+                                                    {savedItems.length}
+                                                </span>
+                                            </h2>
                                                 {savedItems.length > 0 ? (
                                                     <div className="divide-y divide-slate-100">
                                                         {savedItems.map((item) => (
@@ -646,13 +588,13 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                                         ))}
                                                     </div>
                                                 ) : (
-                                                    <p className="py-8 text-center text-xs text-slate-500">
+                                                    <p className="py-8 text-center text-sm text-slate-500">
                                                         Nothing saved yet. Tap the bookmark icon on any story to save it for later.
                                                     </p>
                                                 )}
                                             </section>
                                         <section>
-                                            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 mb-3 pb-2 border-b border-slate-200/70">
+                                            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-900 mb-4 pb-3 border-b border-slate-200/70">
                                                 Recently Read
                                             </h2>
                                                 {recentItems.length > 0 ? (
@@ -668,7 +610,7 @@ export default function NewsList({ initialTab = 'ask' }: { initialTab?: Tab }) {
                                                         ))}
                                                     </div>
                                                 ) : (
-                                                    <p className="py-6 text-center text-sm text-gray-600">
+                                                    <p className="py-6 text-center text-sm text-slate-500">
                                                         Stories you open will appear here.
                                                     </p>
                                                 )}

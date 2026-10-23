@@ -82,7 +82,7 @@ export default function NewsDetail({ item, onBack, saved = false, onToggleSave }
                             aria-pressed={saved}
                             className={`min-h-[36px] inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 border rounded-xl transition-all whitespace-nowrap active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 ${
                                 saved
-                                    ? 'border-blue-200 text-blue-700 bg-blue-50/80'
+                                    ? 'border-slate-300 text-slate-900 bg-slate-100'
                                     : 'border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                             }`}
                         >
@@ -109,17 +109,17 @@ export default function NewsDetail({ item, onBack, saved = false, onToggleSave }
                 </div>
             </div>
 
-            <article className="max-w-2xl bg-white border border-slate-200/80 rounded-2xl p-5 sm:p-7 shadow-2xs">
+            <article className="max-w-2xl">
                 <div className="flex items-center gap-2 flex-wrap text-xs mb-3">
-                    <span className="px-2.5 py-0.5 border border-slate-200 bg-slate-50 font-semibold text-slate-700 rounded-full whitespace-nowrap text-[11px]">
+                    <span className="px-2.5 py-0.5 border border-slate-200 bg-white font-semibold text-slate-700 rounded-full whitespace-nowrap text-[11px]">
                         {item.category}
                     </span>
-                    <span className="font-semibold text-slate-900 truncate">{item.source}</span>
+                    <span className="font-semibold text-slate-700 truncate">{item.source}</span>
                     <span className="text-slate-300" aria-hidden="true">•</span>
                     <span className="text-slate-500 font-medium whitespace-nowrap">{formattedDate}</span>
                 </div>
 
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-900 leading-tight tracking-tight mb-4">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 leading-tight tracking-tight mb-4">
                     {item.title}
                 </h2>
 
@@ -127,10 +127,10 @@ export default function NewsDetail({ item, onBack, saved = false, onToggleSave }
                     {item.contentSnippet}
                 </p>
 
-                <div className="bg-slate-50/90 border border-slate-200/80 rounded-2xl p-4 sm:p-5 mb-6" aria-live="polite">
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 mb-6" aria-live="polite">
                     <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
                         <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+                            <span className="w-2 h-2 rounded-full bg-slate-900"></span>
                             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900">
                                 AI Key Points Summary
                             </h3>
@@ -160,7 +160,7 @@ export default function NewsDetail({ item, onBack, saved = false, onToggleSave }
                                     ul: (p) => <ul className="space-y-2" {...p} />,
                                     li: (p) => <li className="flex gap-2 text-sm leading-relaxed" {...p} />,
                                     p: (p) => <p className="mb-2" {...p} />,
-                                    strong: (p) => <strong className="font-bold text-slate-900" {...p} />,
+                                    strong: (p) => <strong className="font-semibold text-slate-900" {...p} />,
                                 }}
                             >
                                 {summary}

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import SubscribeButton from './SubscribeButton';
 import TabIcon from './TabIcon';
 import { type Tab } from '@/lib/tabs';
-import { REFRESH_EVENT } from './Navbar';
+import { REFRESH_EVENT } from '@/lib/appEvents';
 
 const TABS: { id: Tab; label: string }[] = [
     { id: 'ask', label: 'Ask AI' },
@@ -68,7 +68,7 @@ export default function Sidebar({ activeTab, onSelectTab }: SidebarProps) {
 
                 {/* Navigation */}
                 <nav aria-label="Main navigation" className="flex-1 min-h-0 overflow-y-auto px-3 py-4">
-                    <p className="px-3 pb-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                         Menu
                     </p>
                     <div className="space-y-1">

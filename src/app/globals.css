@@ -1,8 +1,6 @@
 @import "tailwindcss";
 
 @theme {
-  --color-navy: #091326;
-  --color-navy-light: #162447;
   --font-sans: var(--font-sans), system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -46,34 +44,4 @@ html {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(100, 116, 139, 0.5);
-}
-
-@layer components {
-  .btn-navy {
-    background-color: var(--color-navy);
-    color: #ffffff;
-    transition-property: all;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 150ms;
-  }
-
-  .btn-navy:hover {
-    background-color: var(--color-navy-light);
-  }
-
-  /* Glassmorphism surfaces */
-  .surface-card {
-    background: #ffffff;
-    border: 1px solid rgba(226, 232, 240, 0.85);
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.03), 0 1px 2px -1px rgba(0, 0, 0, 0.03);
-  }
-
-  .surface-card-hover {
-    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  .surface-card-hover:hover {
-    border-color: rgba(203, 213, 225, 1);
-    box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
-  }
 }

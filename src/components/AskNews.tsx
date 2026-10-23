@@ -129,13 +129,13 @@ export default function AskNews() {
     }
 
     return (
-        <div className="w-full h-full flex flex-col min-h-0 bg-white border-0 shadow-none">
+        <div className="w-full h-full flex flex-col min-h-0 bg-slate-50 border-0 shadow-none">
             {/* Minimal Header Bar */}
-            <div className="shrink-0 h-12 border-b border-slate-100 px-4 sm:px-6 flex items-center justify-between bg-white z-10">
-                <div className="flex items-center gap-2 text-xs font-semibold text-slate-800">
+            <div className="shrink-0 h-12 border-b border-slate-200/70 px-4 sm:px-6 flex items-center justify-between bg-slate-50 z-10">
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-900">
                     <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
                     <span>Ask AI</span>
-                    <span className="text-slate-400 font-normal hidden sm:inline">Today&apos;s headlines</span>
+                    <span className="text-slate-500 font-normal hidden sm:inline">Today&apos;s headlines</span>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -143,7 +143,7 @@ export default function AskNews() {
                         <>
                             <button
                                 onClick={copyTranscript}
-                                className="text-xs font-medium text-slate-500 hover:text-slate-900 px-2 py-1 rounded-md hover:bg-slate-50 transition-colors"
+                                className="text-xs font-semibold text-slate-500 hover:text-slate-900 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors"
                             >
                                 {transcriptCopied ? 'Copied ✓' : 'Copy chat'}
                             </button>
@@ -151,7 +151,7 @@ export default function AskNews() {
                                 onClick={() => setMessages([])}
                                 aria-label="Clear chat"
                                 title="Clear conversation"
-                                className="text-xs font-medium text-slate-500 hover:text-slate-900 px-2 py-1 rounded-md hover:bg-slate-50 transition-colors"
+                                className="text-xs font-semibold text-slate-500 hover:text-slate-900 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors"
                             >
                                 Reset
                             </button>
@@ -199,7 +199,7 @@ export default function AskNews() {
                                 <div className="max-w-[85%] sm:max-w-[75%] bg-slate-900 text-white text-sm leading-relaxed rounded-2xl rounded-br-xs px-4 py-3 shadow-2xs">
                                     <p className="whitespace-pre-wrap break-words">{m.text}</p>
                                 </div>
-                                <span className="text-[11px] font-medium text-slate-400 mt-1 mr-1">{m.at}</span>
+                                <span className="text-[11px] font-medium text-slate-500 mt-1 mr-1">{m.at}</span>
                             </div>
                         ) : m.error ? (
                             <div key={m.id} className="flex items-start gap-3">
@@ -221,14 +221,14 @@ export default function AskNews() {
                             <div key={m.id} className="flex items-start gap-3 group">
                                 <AssistantAvatar />
                                 <div className="min-w-0 max-w-[92%] sm:max-w-[85%]">
-                                    <div className="bg-slate-50 border border-slate-100 text-slate-800 rounded-2xl rounded-tl-xs px-4 sm:px-5 py-3.5">
+                                    <div className="bg-white border border-slate-200/70 text-slate-800 rounded-2xl rounded-tl-xs px-4 sm:px-5 py-3.5">
                                         <ReactMarkdown
                                             components={{
                                                 p: (props) => (
                                                     <p className="text-sm leading-relaxed break-words mb-2.5 last:mb-0" {...props} />
                                                 ),
                                                 strong: (props) => (
-                                                    <strong className="font-bold text-slate-900" {...props} />
+                                                    <strong className="font-semibold text-slate-900" {...props} />
                                                 ),
                                                 ul: (props) => (
                                                     <ul className="list-disc pl-5 my-2 space-y-1.5 text-sm" {...props} />
@@ -245,7 +245,7 @@ export default function AskNews() {
                                         </ReactMarkdown>
                                     </div>
                                     <div className="flex items-center gap-2 mt-1.5 ml-1">
-                                        <span className="text-[11px] font-medium text-slate-400">{m.at}</span>
+                                        <span className="text-[11px] font-medium text-slate-500">{m.at}</span>
                                         <span className="text-slate-300">•</span>
                                         <button
                                             onClick={() => copyMessage(m.id, m.text)}
@@ -262,7 +262,7 @@ export default function AskNews() {
                     {loading && (
                         <div className="flex items-start gap-3">
                             <AssistantAvatar />
-                            <div className="bg-slate-50 border border-slate-100 rounded-2xl rounded-tl-xs px-4 sm:px-5 py-3.5">
+                            <div className="bg-white border border-slate-200/70 rounded-2xl rounded-tl-xs px-4 sm:px-5 py-3.5">
                                 <LoadingMessage
                                     stages={[
                                         'Reading headlines…',
@@ -278,7 +278,7 @@ export default function AskNews() {
             </div>
 
             {/* Central Fixed Bottom Input Dock */}
-            <div className="shrink-0 bg-white border-t border-slate-100 px-4 py-3 sm:py-4">
+            <div className="shrink-0 bg-slate-50 border-t border-slate-200/70 px-4 py-3 sm:py-4">
                 <div className="max-w-3xl mx-auto w-full">
                     {messages.length > 0 && (
                         <div
@@ -303,7 +303,7 @@ export default function AskNews() {
                             e.preventDefault();
                             ask(input);
                         }}
-                        className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl p-1.5 focus-within:border-slate-800 focus-within:bg-white focus-within:ring-2 focus-within:ring-slate-900/10 transition-all"
+                        className="flex items-center gap-2 bg-white border border-slate-200 rounded-2xl p-1.5 focus-within:border-slate-800 focus-within:ring-2 focus-within:ring-slate-900/10 transition-all"
                     >
                         <input
                             ref={inputRef}

@@ -32,8 +32,8 @@ export default function BottomNav({
                                 type="button"
                                 onClick={() => onChange(item.id)}
                                 aria-current={active ? 'page' : undefined}
-                                className={`w-full min-h-14 flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[10px] font-semibold transition-colors active:scale-95 ${
-                                    active ? 'text-slate-900' : 'text-slate-400 hover:text-slate-700'
+                                className={`w-full min-h-14 flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[11px] font-semibold transition-colors active:scale-95 ${
+                                    active ? 'text-slate-900' : 'text-slate-500 hover:text-slate-700'
                                 }`}
                             >
                                 <span

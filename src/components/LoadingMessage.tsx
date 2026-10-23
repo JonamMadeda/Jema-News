@@ -23,9 +23,9 @@ export default function LoadingMessage({ stages, dark = false, intervalMs = 1800
         <div role="status" aria-live="polite" className="flex items-center gap-2.5">
             <span
                 aria-hidden="true"
-                className={`h-4 w-4 shrink-0 rounded-full border-2 animate-spin ${dark ? 'border-white/25 border-t-white' : 'border-gray-200 border-t-[#001f3f]'}`}
+                className={`h-4 w-4 shrink-0 rounded-full border-2 animate-spin ${dark ? 'border-white/25 border-t-white' : 'border-slate-200 border-t-slate-900'}`}
             ></span>
-            <span className={`text-[13px] font-medium ${dark ? 'text-white/85' : 'text-gray-600'}`}>
+            <span className={`text-xs font-medium ${dark ? 'text-white/85' : 'text-slate-500'}`}>
                 {stages[index]}
             </span>
         </div>

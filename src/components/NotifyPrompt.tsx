@@ -84,7 +84,7 @@ export default function NotifyPrompt() {
                     <button
                         onClick={enable}
                         disabled={busy}
-                        className="flex-1 min-h-[36px] text-xs font-bold bg-white text-slate-900 rounded-xl hover:bg-slate-100 transition-all whitespace-nowrap active:scale-98 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                        className="flex-1 min-h-[36px] text-xs font-semibold bg-white text-slate-900 rounded-xl hover:bg-slate-100 transition-all whitespace-nowrap active:scale-98 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                     >
                         {busy ? 'Enabling…' : 'Enable Alerts'}
                     </button>
