@@ -1,4 +1,4 @@
-import { fetchNews, legacyDecodeStoryId } from '@/lib/rss';
+import { fetchPool, legacyDecodeStoryId } from '@/lib/rss';
 import type { NewsItem } from '@/lib/types';
 
 const MAX_ID_LENGTH = 4096;
@@ -13,7 +13,7 @@ export function decodeStoryId(id: string): string | null {
 export async function findStory(id: string): Promise<NewsItem | null> {
     if (!id || id.length > MAX_ID_LENGTH) return null;
     try {
-        const news = await fetchNews();
+        const news = await fetchPool();
         const direct = news.find((n) => n.id === id);
         if (direct) return direct;
         const link = legacyDecodeStoryId(id);

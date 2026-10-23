@@ -1,4 +1,4 @@
-import { fetchNews, resolveByIds } from '@/lib/rss';
+import { fetchNews, fetchPool, resolveByIds } from '@/lib/rss';
 import { VALID_CATEGORIES } from '@/lib/types';
 import { checkRateLimit, clientKey, rateLimitedResponse } from '@/lib/rateLimit';
 import { NextResponse } from 'next/server';
@@ -31,8 +31,6 @@ export async function GET(req: Request) {
         const q = (searchParams.get('q') || '').trim().slice(0, MAX_Q_LENGTH).toLowerCase();
         const idsParam = (searchParams.get('ids') || '').trim().slice(0, MAX_IDS * (MAX_ID_LENGTH + 1));
 
-        const all = await fetchNews();
-
         // Batch lookup for bookmarks / history / deep-links — preserves request order
         if (idsParam) {
             const wanted = idsParam
@@ -40,10 +38,12 @@ export async function GET(req: Request) {
                 .map((s) => s.trim())
                 .filter((s) => s.length > 0 && s.length <= MAX_ID_LENGTH)
                 .slice(0, MAX_IDS);
-            const items = resolveByIds(all, wanted);
+            const pool = await fetchPool();
+            const items = resolveByIds(pool, wanted);
             return NextResponse.json({ items, total: items.length, page: 1, limit: items.length, totalPages: 1 });
         }
 
+        const all = await fetchNews();
         let result = all;
         if (category !== 'All') {
             result = result.filter((item) => item.category === category);

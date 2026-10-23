@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { completeWithFallback, hasAiProvider } from '@/lib/ai';
-import { fetchNews } from '@/lib/rss';
+import { balancedHeadlines, fetchNews } from '@/lib/rss';
 import { checkRateLimit, clientKey, rateLimitedResponse } from '@/lib/rateLimit';
 
 export const dynamic = 'force-dynamic';
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
             throw new Error('No news available right now');
         }
 
-        const top = news.slice(0, HEADLINE_COUNT);
+        const top = balancedHeadlines(news, HEADLINE_COUNT);
         const headlines = top
             .map(
                 (n, i) =>

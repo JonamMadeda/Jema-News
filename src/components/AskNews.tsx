@@ -93,7 +93,6 @@ export default function AskNews() {
             ]);
         } finally {
             setLoading(false);
-            inputRef.current?.focus();
         }
     }
 

@@ -1,4 +1,4 @@
-import { fetchNews } from '@/lib/rss';
+import { balancedHeadlines, fetchNews } from '@/lib/rss';
 import { completeWithFallback } from '@/lib/ai';
 import { CachedDigest } from '@/lib/digestCache';
 
@@ -10,7 +10,7 @@ export async function buildFreshDigest(): Promise<CachedDigest> {
         throw new Error('No news available to summarize');
     }
 
-    const top = news.slice(0, 20);
+    const top = balancedHeadlines(news, 20);
     const headlines = top
         .map((n, i) => `${i + 1}. [${n.category} | ${n.source}] ${n.title} — ${n.contentSnippet?.slice(0, 200) || 'No excerpt'}`)
         .join('\n');
